@@ -1,0 +1,59 @@
+[user]
+  name = Albilaga Linggra Pradana
+  email = git@albilaga.id
+
+[alias]
+  co = checkout
+  st = status
+  rh = reset HEAD
+  rhh = reset --hard HEAD
+  pu = pull
+  up = push
+
+  l = "!. ~/.githelpers && pretty_git_log"
+  la = "!git l --all"
+  lr = "!git l -30"
+  lra = "!git lr --all"
+  lg = "!git l -G $1 -- $2"
+  feature = !sh -c 'git checkout --no-track -b $0 origin/main'
+
+  ruf = "!. ~/.githelpers && remove_untracked_files"
+
+	tree = log --oneline --decorate --graph
+
+  # Taken from here: https://aaronbonner.io/post/80766268890/git-alias-to-simplify-setting-upstream-branch
+  sup = "!git branch --set-upstream-to=origin/`git symbolic-ref --short HEAD`"
+[core]
+  excludesfile = ~/.gitignore
+
+[color]
+  diff = auto
+  status = auto
+  branch = auto
+	ui = true
+
+[push]
+	default = current
+	followTags = true
+
+[remote]
+  pushDefault = origin
+
+[branch]
+	autosetuprebase = always
+
+[diff "gpg"]
+	binary = true
+	textconv = gpg -d --quiet --yes --compress-algo=none --no-encrypt-to --batch --use-agent
+
+[commit]
+	verbose = true
+[init]
+	defaultBranch = main
+[pull]
+	rebase = true
+[protocol "file"]
+	allow = always
+
+[includeIf "gitdir:~/Documents/tonestro/"]
+    path =~/Documents/tonestro/.gitconfig
