@@ -19,7 +19,7 @@
 
   ruf = "!. ~/.githelpers && remove_untracked_files"
 
-	tree = log --oneline --decorate --graph
+  tree = log --oneline --decorate --graph
 
   # Taken from here: https://aaronbonner.io/post/80766268890/git-alias-to-simplify-setting-upstream-branch
   sup = "!git branch --set-upstream-to=origin/`git symbolic-ref --short HEAD`"
