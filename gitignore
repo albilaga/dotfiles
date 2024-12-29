@@ -5,3 +5,4 @@ tags
 .env
 .envrc
 .idea
+zsh.d/private.sh

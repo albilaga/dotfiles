@@ -5,6 +5,16 @@
 typeset -U PATH
 autoload colors; colors;
 
+#############
+## PRIVATE ##
+#############
+# Include private stuff that's not supposed to show up
+# in the dotfiles repo
+local private="${HOME}/.zsh.d/private.sh"
+if [ -e ${private} ]; then
+  . ${private}
+fi
+
 ##########
 # HISTORY
 ##########
@@ -41,9 +51,6 @@ for dump in ~/.zcompdump(N.mh+24); do
 done
 compinit -C
 
-
-
-
 # unsetopt menucomplete
 unsetopt flowcontrol
 setopt auto_menu
@@ -68,7 +75,7 @@ bindkey -v
 # (tmux and Neovim both handle 91;5u correctly, but raw zsh inside Ghostty doesn't)
 #
 # Thanks to @rockorager for this!
-bindkey "^[[91;5u" vi-cmd-mode
+# bindkey "^[[91;5u" vi-cmd-mode
 
 # Open line in Vim by pressing 'v' in Command-Mode
 autoload -U edit-command-line
@@ -322,16 +329,6 @@ export PATH="$PATH:$HOME/.local/bin"
 
 # dotnet tools
 export PATH="$PATH:$HOME/.dotnet/tools"
-
-# direnv
-if type direnv &> /dev/null; then
-  eval "$(direnv hook zsh)"
-fi
-
-# mise
-if type mise &> /dev/null; then
-  eval "$(mise activate zsh)"
-fi
 
 # fzf
 if type fzf &> /dev/null && type rg &> /dev/null; then
