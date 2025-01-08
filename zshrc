@@ -75,7 +75,7 @@ bindkey -v
 # (tmux and Neovim both handle 91;5u correctly, but raw zsh inside Ghostty doesn't)
 #
 # Thanks to @rockorager for this!
-# bindkey "^[[91;5u" vi-cmd-mode
+bindkey "^[[91;5u" vi-cmd-mode
 
 # Open line in Vim by pressing 'v' in Command-Mode
 autoload -U edit-command-line
