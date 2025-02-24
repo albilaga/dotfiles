@@ -160,7 +160,7 @@ alias gcm='git checkout main'
 alias gd='git diff'
 alias gdc='git diff --cached'
 # [c]heck [o]ut
-alias co='git checkout'
+alias co='git switch'
 # [f]uzzy check[o]ut
 fo() {
   git branch --no-color --sort=-committerdate --format='%(refname:short)' | fzf --header 'git checkout' | xargs git checkout

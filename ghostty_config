@@ -46,6 +46,9 @@ keybind = ctrl+j=goto_split:bottom
 keybind = ctrl+k=goto_split:top
 keybind = ctrl+l=goto_split:right
 
+keybind = super+left=previous_tab
+keybind = super+right=next_tab
+
 # open scrollback: cmd-shift-j
 
 scrollback-limit = 1000000000
