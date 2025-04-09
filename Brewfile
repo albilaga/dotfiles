@@ -17,6 +17,7 @@ brew "lsd"
 brew "ripgrep"
 brew "zoxide"
 
+cask "raycast"
 cask "whatsapp"
 cask "telegram"
 cask "xcodes"
