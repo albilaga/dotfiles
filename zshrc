@@ -160,18 +160,18 @@ alias gst='git status'
 alias s='git status'
 alias gaa='git add -A'
 alias gc='git commit'
-alias gcm='git checkout main'
+alias gcm='git switch main'
 alias gd='git diff'
 alias gdc='git diff --cached'
 # [c]heck [o]ut
-alias co='git switch'
+alias co='git switch -C'
 # [f]uzzy check[o]ut
 fo() {
-  git branch --no-color --sort=-committerdate --format='%(refname:short)' | fzf --header 'git checkout' | xargs git checkout
+  git branch --no-color --sort=-committerdate --format='%(refname:short)' | fzf --header 'git switch' | xargs git switch
 }
 # [p]ull request check[o]ut
 po() {
-  gh pr list --author "@me" | fzf --header 'checkout PR' | awk '{print $(NF-5)}' | xargs git checkout
+  gh pr list --author "@me" | fzf --header 'checkout PR' | awk '{print $(NF-5)}' | xargs git switch
 }
 alias up='git push'
 alias upf='git push --force'
