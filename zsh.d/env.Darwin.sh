@@ -6,3 +6,7 @@ else
   export EDITOR="vim"
   export GIT_EDITOR="vim"
 fi
+
+if which bat &> /dev/null; then
+  alias cat='bat'
+fi

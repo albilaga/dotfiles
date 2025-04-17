@@ -10,9 +10,13 @@ autoload colors; colors;
 #############
 # Include private stuff that's not supposed to show up
 # in the dotfiles repo
-local private="${HOME}/.zsh.d/private.sh"
-if [ -e ${private} ]; then
-  . ${private}
+local private_dir="${HOME}/.zsh.d/private"
+if [ -d ${private_dir} ]; then
+    for file in ${private_dir}/*.sh; do
+    if [ -e ${file} ]; then
+        . ${file}
+    fi
+    done
 fi
 
 ##########
