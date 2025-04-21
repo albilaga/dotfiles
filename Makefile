@@ -5,8 +5,7 @@ $(HOME)/.%: %
 	ln -sf $(DOTFILE_PATH)/$^ $@
 
 git: $(HOME)/.gitconfig $(HOME)/.githelpers $(HOME)/.gitignore
-zsh: $(HOME)/.zshrc $(HOME)/.zsh.d
-
+zsh: $(HOME)/.zshrc
 $(HOME)/.config/ghostty/config:
 	mkdir -p $(HOME)/.config/ghostty
 	ln -sf $(DOTFILE_PATH)/ghostty_config $(HOME)/.config/ghostty/config
