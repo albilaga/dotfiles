@@ -58,3 +58,6 @@
 
 [includeIf "gitdir:~/Documents/tonestro/"]
     path =~/Documents/tonestro/.gitconfig
+
+[includeIf "gitdir:~/Documents/pans/"]
+    path =~/Documents/pans/.gitconfig
