@@ -334,6 +334,9 @@ export PATH="$PATH:$HOME/.local/bin"
 # dotnet tools
 export PATH="$PATH:$HOME/.dotnet/tools"
 
+# flutter
+export PATH="$PATH:$HOME/flutter/bin"
+
 # fzf
 if type fzf &> /dev/null && type rg &> /dev/null; then
   source <(fzf --zsh)
