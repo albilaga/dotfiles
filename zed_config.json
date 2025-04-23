@@ -113,6 +113,11 @@
     "light": "Catppuccin Latte",
     "dark": "Catppuccin Frappé"
   },
+  "icon_theme": {
+    "mode": "system",
+    "light": "Catppuccin Latte",
+    "dark": "Catppuccin Frappé"
+  },
   "env": {
     "DOTNET_ROOT": "/usr/local/share/dotnet"
   }
