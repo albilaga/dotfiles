@@ -112,5 +112,8 @@
     "mode": "system",
     "light": "Catppuccin Latte",
     "dark": "Catppuccin Frappé"
+  },
+  "env": {
+    "DOTNET_ROOT": "/usr/local/share/dotnet"
   }
 }
