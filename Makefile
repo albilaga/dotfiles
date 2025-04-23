@@ -14,5 +14,5 @@ zed:
 	mkdir -p $(HOME)/.config/zed
 	ln -sf $(DOTFILE_PATH)/zed_config.json $(HOME)/.config/zed/settings.json
 
-all: git zsh ghostty
+all: git zsh ghostty zed
 .PHONY: all
