@@ -15,10 +15,10 @@
       "api_url": "https://api.deepseek.com/beta"
     }
   },
-  "assistant": {
+  "agent": {
     "default_model": {
       "provider": "openai",
-      "model": "deepseek-chat"
+      "model": "deepseek-coder"
     },
     "version": "2"
   },
