@@ -164,7 +164,8 @@ alias gcm='git switch main'
 alias gd='git diff'
 alias gdc='git diff --cached'
 # [c]heck [o]ut
-alias co='git switch -C'
+alias co='git switch'
+alias coc='git switch -c'
 # [f]uzzy check[o]ut
 fo() {
   git branch --no-color --sort=-committerdate --format='%(refname:short)' | fzf --header 'git switch' | xargs git switch
