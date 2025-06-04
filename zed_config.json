@@ -12,13 +12,14 @@
           "max_tokens": 128000
         }
       ],
-      "api_url": "https://api.deepseek.com/beta"
+      "api_url": "https://api.deepseek.com/v1"
     }
   },
   "agent": {
+    "always_allow_tool_actions": true,
     "default_model": {
-      "provider": "openai",
-      "model": "deepseek-coder"
+      "provider": "zed.dev",
+      "model": "claude-sonnet-4-thinking-latest"
     },
     "version": "2"
   },

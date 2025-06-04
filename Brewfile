@@ -16,6 +16,7 @@ brew "scrcpy"
 brew "lsd"
 brew "ripgrep"
 brew "zoxide"
+brew "pngquant"
 
 cask "raycast"
 cask "whatsapp"

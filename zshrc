@@ -188,6 +188,15 @@ alias pingtest="ping 8.8.8.8"
 alias updateall="brew update && brew upgrade && brew autoremove && npm update -g && rustup update"
 alias cleanup="dotnet nuget locals all -c && brew autoremove && brew cleanup"
 
+pngx() {
+    local input="$1"
+    local basename="${input%.*}"
+    pngquant --speed 1 --skip-if-larger "$input" --output "${basename}-output.png"
+}
+
+pngxo() {
+    pngquant --speed 1 --skip-if-larger --ext .png --force "$1"
+}
 ##########
 # FUNCTIONS
 ##########
@@ -354,3 +363,4 @@ fi
 if type atuin &> /dev/null; then
   eval "$(atuin init zsh)"
 fi
+export PATH="/opt/homebrew/opt/openjdk@21/bin:$PATH"
