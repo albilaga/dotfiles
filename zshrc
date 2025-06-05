@@ -157,7 +157,6 @@ alias sz='source ~/.zshrc'
 
 # git
 alias gst='git status'
-alias s='git status'
 alias gaa='git add -A'
 alias gc='git commit'
 alias gcm='git switch main'
