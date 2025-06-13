@@ -188,15 +188,6 @@ alias pingtest="ping 8.8.8.8"
 alias updateall="brew update && brew upgrade && brew autoremove && npm update -g && rustup update"
 alias cleanup="dotnet nuget locals all -c && brew autoremove && brew cleanup"
 
-pngx() {
-    local input="$1"
-    local basename="${input%.*}"
-    pngquant --speed 1 --skip-if-larger "$input" --output "${basename}-output.png"
-}
-
-pngxo() {
-    pngquant --speed 1 --skip-if-larger --ext .png --force "$1"
-}
 ##########
 # FUNCTIONS
 ##########
@@ -253,6 +244,179 @@ pr() {
   else
     echo "gh is not installed"
   fi
+}
+
+# MP4 compression function for GitHub (maximum compression)
+compress_mp4_github() {
+    if [ $# -eq 0 ]; then
+        echo "Usage: compress_mp4_github <input.mp4> [output.mp4]"
+        echo "If no output name provided, will use input_compressed.mp4"
+        return 1
+    fi
+
+    local input="$1"
+    local output="${2:-${1%.*}_compressed.mp4}"
+
+    if [ ! -f "$input" ]; then
+        echo "Error: Input file '$input' not found"
+        return 1
+    fi
+
+    echo "Compressing $input to $output (maximum compression for GitHub)..."
+
+    ffmpeg -i "$input" \
+        -c:v libx264 \
+        -preset veryslow \
+        -crf 28 \
+        -c:a aac \
+        -b:a 64k \
+        -ac 1 \
+        -ar 22050 \
+        -vf "scale=640:-2" \
+        -r 15 \
+        -movflags +faststart \
+        -f mp4 \
+        "$output"
+
+    if [ $? -eq 0 ]; then
+        local original_size=$(stat -f%z "$input" 2>/dev/null || stat -c%s "$input" 2>/dev/null)
+        local compressed_size=$(stat -f%z "$output" 2>/dev/null || stat -c%s "$output" 2>/dev/null)
+        local reduction=$((100 - (compressed_size * 100 / original_size)))
+
+        echo "✅ Compression complete!"
+        echo "Original size: $(numfmt --to=iec $original_size)B"
+        echo "Compressed size: $(numfmt --to=iec $compressed_size)B"
+        echo "Size reduction: ${reduction}%"
+    else
+        echo "❌ Compression failed"
+        return 1
+    fi
+}
+
+# Alternative function with balanced quality/size for when extreme compression isn't needed
+compress_mp4_balanced() {
+    if [ $# -eq 0 ]; then
+        echo "Usage: compress_mp4_balanced <input.mp4> [output.mp4]"
+        return 1
+    fi
+
+    local input="$1"
+    local output="${2:-${1%.*}_balanced.mp4}"
+
+    if [ ! -f "$input" ]; then
+        echo "Error: Input file '$input' not found"
+        return 1
+    fi
+
+    echo "Compressing $input to $output (balanced quality/size)..."
+
+    ffmpeg -i "$input" \
+        -c:v libx264 \
+        -preset slow \
+        -crf 23 \
+        -c:a aac \
+        -b:a 128k \
+        -vf "scale=1280:-2" \
+        -r 24 \
+        -movflags +faststart \
+        -f mp4 \
+        "$output"
+
+    if [ $? -eq 0 ]; then
+        echo "✅ Balanced compression complete!"
+    else
+        echo "❌ Compression failed"
+        return 1
+    fi
+}
+
+# Alias for quick access
+alias mp4compress='compress_mp4_github'
+
+# PNG compression functions
+pngx() {
+    local input="$1"
+    local basename="${input%.*}"
+    pngquant --speed 1 --skip-if-larger "$input" --output "${basename}-output.png"
+}
+
+pngxo() {
+    pngquant --speed 1 --skip-if-larger --ext .png --force "$1"
+}
+
+# Compress all PNG files in current directory with -output.png suffix
+pngxa() {
+    local png_files=(*.png)
+
+    if [ ${#png_files[@]} -eq 0 ] || [ ! -f "${png_files[0]}" ]; then
+        echo "No PNG files found in current directory"
+        return 1
+    fi
+
+    echo "Found ${#png_files[@]} PNG file(s) to compress..."
+
+    local processed=0
+    local skipped=0
+
+    for file in "${png_files[@]}"; do
+        # Skip files that already have -output suffix to avoid processing them again
+        if [[ "$file" == *"-output.png" ]]; then
+            echo "⏭️  Skipping $file (already processed)"
+            ((skipped++))
+            continue
+        fi
+
+        echo "🔄 Processing: $file"
+        local basename="${file%.*}"
+
+        if pngquant --speed 1 --skip-if-larger "$file" --output "${basename}-output.png" 2>/dev/null; then
+            echo "✅ Compressed: $file → ${basename}-output.png"
+            ((processed++))
+        else
+            echo "⚠️  Skipped: $file (no reduction possible or error)"
+            ((skipped++))
+        fi
+    done
+
+    echo "📊 Summary: $processed compressed, $skipped skipped"
+}
+
+# Compress and overwrite all PNG files in current directory
+pngxoa() {
+    local png_files=(*.png)
+
+    if [ ${#png_files[@]} -eq 0 ] || [ ! -f "${png_files[0]}" ]; then
+        echo "No PNG files found in current directory"
+        return 1
+    fi
+
+    echo "Found ${#png_files[@]} PNG file(s) to compress (will overwrite originals)..."
+    echo "⚠️  WARNING: This will overwrite original files!"
+
+    # Ask for confirmation
+    echo -n "Continue? [y/N]: "
+    read -r response
+    if [[ ! "$response" =~ ^[Yy]$ ]]; then
+        echo "Cancelled"
+        return 0
+    fi
+
+    local processed=0
+    local skipped=0
+
+    for file in "${png_files[@]}"; do
+        echo "🔄 Processing: $file"
+
+        if pngquant --speed 1 --skip-if-larger --ext .png --force "$file" 2>/dev/null; then
+            echo "✅ Compressed: $file (overwritten)"
+            ((processed++))
+        else
+            echo "⚠️  Skipped: $file (no reduction possible or error)"
+            ((skipped++))
+        fi
+    done
+
+    echo "📊 Summary: $processed compressed, $skipped skipped"
 }
 
 #########
