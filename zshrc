@@ -138,6 +138,8 @@ case $OSTYPE in
   ;;
 esac
 
+source ${HOME}/.zsh.d/git-functions.zsh
+
 if type lsd &> /dev/null; then
   alias ls=lsd
 fi
@@ -154,35 +156,6 @@ alias rsyncssh='rsync -Pr --rsh=ssh'
 # Edit/Source vim config
 alias ez='vim ~/.zshrc'
 alias sz='source ~/.zshrc'
-
-# git
-alias gst='git status'
-alias gaa='git add -A'
-alias gc='git commit'
-alias gcm='git switch main'
-alias gd='git diff'
-alias gdc='git diff --cached'
-# [c]heck [o]ut
-alias co='git switch'
-alias coc='git switch -c'
-# [f]uzzy check[o]ut
-fo() {
-  git branch --no-color --sort=-committerdate --format='%(refname:short)' | fzf --header 'git switch' | xargs git switch
-}
-# [p]ull request check[o]ut
-po() {
-  gh pr list --author "@me" | fzf --header 'checkout PR' | awk '{print $(NF-5)}' | xargs git switch
-}
-alias up='git push'
-alias upf='git push --force'
-alias pu='git pull'
-alias pur='git pull --rebase'
-alias fe='git fetch'
-alias re='git rebase'
-alias lr='git l -30'
-alias cdr='cd $(git rev-parse --show-toplevel)' # cd to git Root
-alias hs='git rev-parse --short HEAD'
-alias hm='git log --format=%B -n 1 HEAD'
 
 alias pingtest="ping 8.8.8.8"
 alias updateall="brew update && brew upgrade && brew autoremove && npm update -g && rustup update"
@@ -528,3 +501,10 @@ if type atuin &> /dev/null; then
   eval "$(atuin init zsh)"
 fi
 export PATH="/opt/homebrew/opt/openjdk@21/bin:$PATH"
+
+# bun completions
+[ -s "/Users/albilaga/.bun/_bun" ] && source "/Users/albilaga/.bun/_bun"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
