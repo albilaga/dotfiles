@@ -218,6 +218,15 @@ fo() {
 po() {
   gh pr list --author "@me" | fzf --header 'checkout PR' | awk '{print $(NF-5)}' | xargs git switch
 }
+# Open PR on GitHub
+pr() {
+  if type gh &> /dev/null; then
+    gh pr view -w
+  else
+    echo "gh is not installed"
+  fi
+}
+
 alias up='git push'
 alias upf='git push --force'
 alias pu='git pull'
