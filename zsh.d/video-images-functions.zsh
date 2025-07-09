@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # CleanShot file processor function
 process_cleanshot() {
     local folder_name="$1"
