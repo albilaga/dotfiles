@@ -160,7 +160,8 @@ alias ez='vim ~/.zshrc'
 alias sz='source ~/.zshrc'
 
 alias pingtest="ping 8.8.8.8"
-alias updateall="brew update && brew upgrade && brew autoremove && npm update -g && rustup update"
+alias update="brew update && brew upgrade && brew autoremove"
+alias updateall="brew update && brew upgrade && brew autoremove && bun update -g && rustup update"
 alias cleanup="dotnet nuget locals all -c && brew autoremove && brew cleanup"
 
 ##########
