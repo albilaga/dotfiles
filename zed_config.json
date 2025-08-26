@@ -1,7 +1,6 @@
 {
   "language_models": {
     "openai": {
-      "version": "1",
       "available_models": [
         {
           "name": "deepseek-coder",
@@ -19,9 +18,8 @@
     "always_allow_tool_actions": true,
     "default_model": {
       "provider": "zed.dev",
-      "model": "claude-sonnet-4-thinking-latest"
-    },
-    "version": "2"
+      "model": "claude-sonnet-4"
+    }
   },
   "telemetry": {
     "diagnostics": false,
@@ -30,7 +28,7 @@
   "vim_mode": false,
   "ui_font_size": 14,
   "buffer_font_size": 16,
-  "buffer_font_family": "Monaspace Argon",
+  "buffer_font_family": "Monaspace Neon Var",
   "buffer_font_features": {
     "calt": true,
     "ss01": true,
@@ -118,8 +116,5 @@
     "mode": "system",
     "light": "Catppuccin Latte",
     "dark": "Catppuccin Frappé"
-  },
-  "env": {
-    "DOTNET_ROOT": "/usr/local/share/dotnet"
   }
 }
