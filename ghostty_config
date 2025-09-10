@@ -3,9 +3,6 @@ macos-option-as-alt = true
 
 window-inherit-font-size = false
 
-font-family = BerkeleyMono Nerd Font Mono
-font-size = 13
-
 keybind = ctrl+h=goto_split:left
 keybind = ctrl+j=goto_split:bottom
 keybind = ctrl+k=goto_split:top
@@ -30,3 +27,4 @@ font-feature = calt, liga, ss01, ss02, ss03, ss04, ss05, ss06, ss07, ss08, ss09,
 window-title-font-family = "Monaspace Neon Var"
 
 theme =  dark:catppuccin-frappe,light:catppuccin-latte
+keybind = shift+enter=text:\n
