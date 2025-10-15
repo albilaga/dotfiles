@@ -1,5 +1,5 @@
 # Branch cleanup function
-git-cleanup-branches() {
+git_cleanup_branches() {
     # Colors for output
     local RED='\033[0;31m'
     local GREEN='\033[0;32m'
@@ -180,20 +180,20 @@ git-cleanup-branches() {
 }
 
 # Create some useful aliases
-alias gcb='git-cleanup-branches'
-alias git-prune-branches='git-cleanup-branches'
+alias gcb='git_cleanup_branches'
+alias git_prune_branches='git_cleanup_branches'
 
 # Optional: Add a shorter alias
-alias gclean='git-cleanup-branches'
+alias gclean='git_cleanup_branches'
 
 
 
 # Optional: Auto-cleanup function (use with caution)
-git-auto-cleanup() {
+git_auto_cleanup() {
     echo "⚠️  This will automatically clean up branches. Continue? (y/N)"
     read -r response
     if [[ "$response" =~ ^[Yy]$ ]]; then
-        git-cleanup-branches
+        git_cleanup_branches
     else
         echo "Cleanup cancelled."
     fi
@@ -210,22 +210,27 @@ alias gdc='git diff --cached'
 # [c]heck [o]ut
 alias co='git switch'
 alias coc='git switch -c'
-# [f]uzzy check[o]ut
-fo() {
+# Fuzzy checkout - interactive branch selection
+git_fuzzy_checkout() {
   git branch --no-color --sort=-committerdate --format='%(refname:short)' | fzf --header 'git switch' | xargs git switch
 }
-# [p]ull request check[o]ut
-po() {
+alias fo='git_fuzzy_checkout'
+
+# Pull request checkout - checkout your own PR
+git_pr_checkout() {
   gh pr list --author "@me" | fzf --header 'checkout PR' | awk '{print $(NF-5)}' | xargs git switch
 }
-# Open PR on GitHub
-pr() {
+alias po='git_pr_checkout'
+
+# Open current PR in browser
+git_pr_open() {
   if type gh &> /dev/null; then
     gh pr view -w
   else
     echo "gh is not installed"
   fi
 }
+alias pr='git_pr_open'
 
 alias up='git push'
 alias upf='git push --force'

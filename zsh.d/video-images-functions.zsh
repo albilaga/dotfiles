@@ -101,10 +101,10 @@ process_cleanshot() {
     fi
 
     echo ""
-    echo "🔧 Running pngxoa compression on files in $folder_name..."
+    echo "🔧 Running PNG compression on files in $folder_name..."
 
-    # Modified pngxoa function without confirmation
-    local pngxoa_auto() {
+    # Modified png_compress_all_overwrite function without confirmation
+    local png_compress_auto() {
         local target_dir="$1"
 
         # Change to target directory
@@ -142,7 +142,7 @@ process_cleanshot() {
     }
 
     # Run PNG compression
-    pngxoa_auto "$folder_name"
+    png_compress_auto "$folder_name"
 
     # Modified compress_mp4_github function without confirmation and preserving original name
     local compress_mp4_github_auto() {
@@ -290,18 +290,20 @@ compress_mp4_balanced() {
 alias mp4compress='compress_mp4_github'
 
 # PNG compression functions
-pngx() {
+png_compress() {
     local input="$1"
     local basename="${input%.*}"
     pngquant --speed 1 --skip-if-larger "$input" --output "${basename}-output.png"
 }
+alias pngx='png_compress'
 
-pngxo() {
+png_compress_overwrite() {
     pngquant --speed 1 --skip-if-larger --ext .png --force "$1"
 }
+alias pngxo='png_compress_overwrite'
 
 # Compress all PNG files in current directory with -output.png suffix
-pngxa() {
+png_compress_all() {
     local png_files=(*.png)
 
     if [ ${#png_files[@]} -eq 0 ] || [ ! -f "${png_files[0]}" ]; then
@@ -336,9 +338,10 @@ pngxa() {
 
     echo "📊 Summary: $processed compressed, $skipped skipped"
 }
+alias pngxa='png_compress_all'
 
 # Compress and overwrite all PNG files in current directory
-pngxoa() {
+png_compress_all_overwrite() {
     local png_files=(*.png)
 
     if [ ${#png_files[@]} -eq 0 ] || [ ! -f "${png_files[0]}" ]; then
@@ -374,3 +377,4 @@ pngxoa() {
 
     echo "📊 Summary: $processed compressed, $skipped skipped"
 }
+alias pngxoa='png_compress_all_overwrite'

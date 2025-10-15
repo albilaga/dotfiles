@@ -141,25 +141,26 @@ esac
 source ${HOME}/.zsh.d/git-functions.zsh
 source ${HOME}/.zsh.d/video-images-functions.zsh
 
+################
+# GENERAL ALIASES
+################
 
-if type lsd &> /dev/null; then
-  alias ls=lsd
-fi
-alias lls='ls -lh --sort=size --reverse'
-alias llt='ls -lrt'
+# Shell management
 alias bear='clear && echo "Clear as a bear!"'
-
-alias history='history 1'
-alias hist='history | grep '
-
-# Use rsync with ssh and show progress
-alias rsyncssh='rsync -Pr --rsh=ssh'
-
-# Edit/Source vim config
 alias ez='vim ~/.zshrc'
 alias sz='source ~/.zshrc'
 
+# History
+alias history='history 1'
+alias hist='history | grep '
+
+# Network
 alias pingtest="ping 8.8.8.8"
+
+# File transfer
+alias rsyncssh='rsync -Pr --rsh=ssh'
+
+# Package management
 alias update="brew update && brew upgrade && brew autoremove"
 alias updateall="brew update && brew upgrade && brew autoremove && bun update -g && rustup update"
 alias cleanup="dotnet nuget locals all -c && brew autoremove && brew cleanup"
@@ -274,35 +275,28 @@ export LSCOLORS="Gxfxcxdxbxegedabagacad"
 # Set it to 10ms
 export KEYTIMEOUT=1
 
-if type nvim &> /dev/null; then
-  alias vim="nvim"
-  export EDITOR="nvim"
-  export PSQL_EDITOR="nvim -c"set filetype=sql""
-  export GIT_EDITOR="nvim"
-else
-  export EDITOR='vim'
-  export PSQL_EDITOR='vim -c"set filetype=sql"'
-  export GIT_EDITOR='vim'
-fi
-
-# rustup
-export PATH="$HOME/.cargo/bin:$PATH"
+#############
+# PATH SETUP
+#############
 
 # homebrew
 export PATH="/usr/local/bin:$PATH"
 export PATH="/opt/homebrew/opt/gnu-sed/libexec/gnubin:$PATH"
 
+# rustup/cargo
+export PATH="$HOME/.cargo/bin:$PATH"
+
+# go
+export PATH="$PATH:$(go env GOPATH)/bin"
+
 # Android SDK
 export PATH="$HOME/Library/Android/sdk/platform-tools/:$PATH"
 
-# Created by `pipx`
+# pipx
 export PATH="$PATH:$HOME/.local/bin"
 
 # dotnet tools
 export PATH="$PATH:$HOME/.dotnet/tools"
-
-# flutter
-export PATH="$PATH:$HOME/flutter/bin"
 
 # fzf
 if type fzf &> /dev/null && type rg &> /dev/null; then
@@ -314,20 +308,10 @@ fi
 
 #zoxide
 if type zoxide &> /dev/null; then
-    eval "$(zoxide init zsh --cmd cd)"
+    eval "$(zoxide init zsh)"
 fi
 
 # Try out atuin
 if type atuin &> /dev/null; then
   eval "$(atuin init zsh)"
 fi
-export PATH="/opt/homebrew/opt/openjdk@21/bin:$PATH"
-
-# bun completions
-[ -s "/Users/albilaga/.bun/_bun" ] && source "/Users/albilaga/.bun/_bun"
-
-# bun
-export BUN_INSTALL="$HOME/.bun"
-export PATH="$BUN_INSTALL/bin:$PATH"
-export PATH="$PATH:$(go env GOPATH)/bin"
-
