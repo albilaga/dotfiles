@@ -12,11 +12,14 @@ zsh: $(HOME)/.zshrc
 	done
 ghostty:
 	mkdir -p $(HOME)/.config/ghostty
-	ln -sf $(DOTFILE_PATH)/ghostty_config $(HOME)/.config/ghostty/config
+	cd $(DOTFILE_PATH)/ghostty && find . -type f | while read file; do \
+		mkdir -p $(HOME)/.config/ghostty/$$(dirname $$file); \
+		ln -sf $(DOTFILE_PATH)/ghostty/$$file $(HOME)/.config/ghostty/$$file; \
+	done
 
 zed:
 	mkdir -p $(HOME)/.config/zed
 	ln -sf $(DOTFILE_PATH)/zed_config.json $(HOME)/.config/zed/settings.json
 
 all: git zsh ghostty zed
-.PHONY: all
+.PHONY: all git zsh ghostty zed
