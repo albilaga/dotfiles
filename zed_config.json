@@ -104,9 +104,6 @@
   "notification_panel": {
     "dock": "left"
   },
-  "chat_panel": {
-    "dock": "left"
-  },
   "theme": {
     "mode": "system",
     "light": "Catppuccin Latte",
