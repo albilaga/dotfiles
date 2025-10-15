@@ -1,44 +1,44 @@
 [user]
-  name = Albilaga Linggra Pradana
-  email = git@albilaga.id
+    name = Albilaga Linggra Pradana
+    email = git@albilaga.id
 
 [alias]
-  co = checkout
-  st = status
-  rh = reset HEAD
-  rhh = reset --hard HEAD
-  pu = pull
-  up = push
+    co = checkout
+    st = status
+    rh = reset HEAD
+    rhh = reset --hard HEAD
+    pu = pull
+    up = push
 
-  l = "!. ~/.githelpers && pretty_git_log"
-  la = "!git l --all"
-  lr = "!git l -30"
-  lra = "!git lr --all"
-  lg = "!git l -G $1 -- $2"
-  feature = !sh -c 'git checkout --no-track -b $0 origin/main'
+    l = "!. ~/.githelpers && pretty_git_log"
+    la = "!git l --all"
+    lr = "!git l -30"
+    lra = "!git lr --all"
+    lg = "!git l -G $1 -- $2"
+    feature = !sh -c 'git checkout --no-track -b $0 origin/main'
 
-  ruf = "!. ~/.githelpers && remove_untracked_files"
+    ruf = "!. ~/.githelpers && remove_untracked_files"
 
-  tree = log --oneline --decorate --graph
+    tree = log --oneline --decorate --graph
 
-  # Taken from here: https://aaronbonner.io/post/80766268890/git-alias-to-simplify-setting-upstream-branch
-  sup = "!git branch --set-upstream-to=origin/`git symbolic-ref --short HEAD`"
+    # Taken from here: https://aaronbonner.io/post/80766268890/git-alias-to-simplify-setting-upstream-branch
+    sup = "!git branch --set-upstream-to=origin/`git symbolic-ref --short HEAD`"
 [core]
-  excludesfile = ~/.gitignore
+    excludesfile = ~/.gitignore
 	autocrlf = input
 
 [color]
-  diff = auto
-  status = auto
-  branch = auto
-	ui = true
+    diff = auto
+    status = auto
+    branch = auto
+    ui = true
 
 [push]
 	default = current
 	followTags = true
 
 [remote]
-  pushDefault = origin
+    pushDefault = origin
 
 [branch]
 	autosetuprebase = always
@@ -55,9 +55,6 @@
 	rebase = true
 [protocol "file"]
 	allow = always
-
-[includeIf "gitdir:~/Documents/tonestro/"]
-    path =~/Documents/tonestro/.gitconfig
 
 [includeIf "gitdir:~/Documents/pans/"]
     path =~/Documents/pans/.gitconfig
