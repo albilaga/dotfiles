@@ -5,7 +5,11 @@ $(HOME)/.%: %
 	ln -sf $(DOTFILE_PATH)/$^ $@
 
 git: $(HOME)/.gitconfig $(HOME)/.githelpers $(HOME)/.gitignore
-zsh: $(HOME)/.zshrc $(HOME)/.zsh.d
+zsh: $(HOME)/.zshrc
+	mkdir -p $(HOME)/.zsh.d
+	for file in $(DOTFILE_PATH)/zsh.d/*; do \
+		ln -sf $$file $(HOME)/.zsh.d/$$(basename $$file); \
+	done
 ghostty:
 	mkdir -p $(HOME)/.config/ghostty
 	ln -sf $(DOTFILE_PATH)/ghostty_config $(HOME)/.config/ghostty/config
