@@ -10,16 +10,22 @@ zsh: $(HOME)/.zshrc
 	for file in $(DOTFILE_PATH)/zsh.d/*; do \
 		ln -sf $$file $(HOME)/.zsh.d/$$(basename $$file); \
 	done
-ghostty:
-	mkdir -p $(HOME)/.config/ghostty
-	cd $(DOTFILE_PATH)/ghostty && find . -type f | while read file; do \
-		mkdir -p $(HOME)/.config/ghostty/$$(dirname $$file); \
-		ln -sf $(DOTFILE_PATH)/ghostty/$$file $(HOME)/.config/ghostty/$$file; \
+config:
+	mkdir -p $(HOME)/.config
+	for dir in $(DOTFILE_PATH)/config/*; do \
+		if [ -d "$$dir" ]; then \
+			app=$$(basename $$dir); \
+			mkdir -p $(HOME)/.config/$$app; \
+			cd $$dir && find . -type f | while read file; do \
+				mkdir -p $(HOME)/.config/$$app/$$(dirname $$file); \
+				ln -sf $$dir/$$file $(HOME)/.config/$$app/$$file; \
+			done; \
+		fi; \
 	done
 
 zed:
 	mkdir -p $(HOME)/.config/zed
 	ln -sf $(DOTFILE_PATH)/zed_config.json $(HOME)/.config/zed/settings.json
 
-all: git zsh ghostty zed
-.PHONY: all git zsh ghostty zed
+all: git zsh config zed
+.PHONY: all git zsh config zed
