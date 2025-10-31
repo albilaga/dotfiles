@@ -1,6 +1,7 @@
 [user]
     name = Albilaga Linggra Pradana
     email = git@albilaga.id
+	signingkey = CBB403C05821067E
 
 [alias]
     co = checkout
@@ -8,7 +9,7 @@
     rh = reset HEAD
     rhh = reset --hard HEAD
     pu = pull
-    up = push
+	up = town up
 
     l = "!. ~/.githelpers && pretty_git_log"
     la = "!git l --all"
@@ -23,6 +24,22 @@
 
     # Taken from here: https://aaronbonner.io/post/80766268890/git-alias-to-simplify-setting-upstream-branch
     sup = "!git branch --set-upstream-to=origin/`git symbolic-ref --short HEAD`"
+	append = town append
+	compress = town compress
+	contribute = town contribute
+	diff-parent = town diff-parent
+	down = town down
+	hack = town hack
+	delete = town delete
+	observe = town observe
+	park = town park
+	prepend = town prepend
+	propose = town propose
+	rename = town rename
+	repo = town repo
+	set-parent = town set-parent
+	ship = town ship
+	sync = town sync
 [core]
     excludesfile = ~/.gitignore
 	autocrlf = input
@@ -49,6 +66,7 @@
 
 [commit]
 	verbose = true
+	gpgsign = true
 [init]
 	defaultBranch = main
 [pull]
@@ -56,5 +74,10 @@
 [protocol "file"]
 	allow = always
 
+[includeIf "gitdir:~/Documents/personal/"]
+    path =~/Documents/personal/.gitconfig
+
 [includeIf "gitdir:~/Documents/pans/"]
     path =~/Documents/pans/.gitconfig
+[tag]
+	gpgSign = true

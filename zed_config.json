@@ -113,5 +113,13 @@
     "mode": "system",
     "light": "Catppuccin Latte",
     "dark": "Catppuccin Frappé"
+  },
+  "lsp": {
+    "protobuf-language-server": {
+      "binary": {
+        "path": "buf",
+        "arguments": ["beta", "lsp"]
+      }
+    }
   }
 }
