@@ -5,6 +5,8 @@
 typeset -U PATH
 autoload colors; colors;
 
+export GPG_TTY=$(tty)
+
 #############
 ## PRIVATE ##
 #############
