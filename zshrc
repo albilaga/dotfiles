@@ -317,3 +317,7 @@ fi
 if type atuin &> /dev/null; then
   eval "$(atuin init zsh)"
 fi
+
+# jenv
+eval "$(jenv init -)"
+jenv enable-plugin export

@@ -20,6 +20,7 @@ brew "pngquant"
 brew "git-town"
 brew "gnupg"
 brew "pinentry-mac"
+brew "jenv"
 
 cask "xcodes-app"
 cask "zed"
