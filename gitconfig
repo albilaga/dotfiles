@@ -40,6 +40,7 @@
 	set-parent = town set-parent
 	ship = town ship
 	sync = town sync
+	continue = town continue
 [core]
     excludesfile = ~/.gitignore
 	autocrlf = input
