@@ -163,7 +163,7 @@ alias pingtest="ping 8.8.8.8"
 alias rsyncssh='rsync -Pr --rsh=ssh'
 
 # Package management
-update() {
+function update {
   if [[ "$OSTYPE" == darwin* ]]; then
     brew update && brew upgrade && brew autoremove && npm update -g
     sudo mas upgrade
