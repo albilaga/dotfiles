@@ -157,14 +157,18 @@ process_cleanshot() {
 
         echo "Compressing $input (maximum compression for GitHub)..."
 
+        local audio_opts=()
+        if ffprobe -i "$input" -show_streams -select_streams a -loglevel error 2>/dev/null | grep -q codec_type; then
+            audio_opts=(-c:a aac -b:a 64k -ac 1 -ar 22050)
+        else
+            audio_opts=(-an)
+        fi
+
         ffmpeg -i "$input" \
             -c:v libx264 \
             -preset veryslow \
             -crf 28 \
-            -c:a aac \
-            -b:a 64k \
-            -ac 1 \
-            -ar 22050 \
+            "${audio_opts[@]}" \
             -vf "scale=640:-2" \
             -r 15 \
             -movflags +faststart \
@@ -220,14 +224,18 @@ compress_mp4_github() {
 
     echo "Compressing $input to $output (maximum compression for GitHub)..."
 
+    local audio_opts=()
+    if ffprobe -i "$input" -show_streams -select_streams a -loglevel error 2>/dev/null | grep -q codec_type; then
+        audio_opts=(-c:a aac -b:a 64k -ac 1 -ar 22050)
+    else
+        audio_opts=(-an)
+    fi
+
     ffmpeg -i "$input" \
         -c:v libx264 \
         -preset veryslow \
         -crf 28 \
-        -c:a aac \
-        -b:a 64k \
-        -ac 1 \
-        -ar 22050 \
+        "${audio_opts[@]}" \
         -vf "scale=640:-2" \
         -r 15 \
         -movflags +faststart \
@@ -266,12 +274,18 @@ compress_mp4_balanced() {
 
     echo "Compressing $input to $output (balanced quality/size)..."
 
+    local audio_opts=()
+    if ffprobe -i "$input" -show_streams -select_streams a -loglevel error 2>/dev/null | grep -q codec_type; then
+        audio_opts=(-c:a aac -b:a 128k)
+    else
+        audio_opts=(-an)
+    fi
+
     ffmpeg -i "$input" \
         -c:v libx264 \
         -preset slow \
         -crf 23 \
-        -c:a aac \
-        -b:a 128k \
+        "${audio_opts[@]}" \
         -vf "scale=1280:-2" \
         -r 24 \
         -movflags +faststart \
@@ -285,6 +299,47 @@ compress_mp4_balanced() {
         return 1
     fi
 }
+
+# Compress and overwrite all MP4 files in current directory
+compress_mp4_github_all() {
+    setopt NULL_GLOB
+    local mp4_files=(*.mp4)
+    unsetopt NULL_GLOB
+
+    if [ ${#mp4_files[@]} -eq 0 ] || [ ! -f "${mp4_files[0]}" ]; then
+        echo "No MP4 files found in current directory"
+        return 1
+    fi
+
+    echo "Found ${#mp4_files[@]} MP4 file(s) to compress (will overwrite originals)..."
+    echo -n "Continue? [y/N]: "
+    read -r response
+    if [[ ! "$response" =~ ^[Yy]$ ]]; then
+        echo "Cancelled"
+        return 0
+    fi
+
+    local processed=0
+    local failed=0
+
+    for file in "${mp4_files[@]}"; do
+        echo ""
+        echo "🔄 Processing: $file"
+        local temp_output="${file%.*}_temp_compressed.mp4"
+
+        if compress_mp4_github "$file" "$temp_output"; then
+            mv "$temp_output" "$file"
+            ((processed++))
+        else
+            [ -f "$temp_output" ] && rm "$temp_output"
+            ((failed++))
+        fi
+    done
+
+    echo ""
+    echo "📊 Summary: $processed compressed, $failed failed"
+}
+alias mp4compressall='compress_mp4_github_all'
 
 # Alias for quick access
 alias mp4compress='compress_mp4_github'
