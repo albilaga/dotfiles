@@ -163,8 +163,15 @@ alias pingtest="ping 8.8.8.8"
 alias rsyncssh='rsync -Pr --rsh=ssh'
 
 # Package management
-alias update="brew update && brew upgrade && brew autoremove"
-alias updateall="brew update && brew upgrade && brew autoremove && bun update -g && rustup update"
+update() {
+  if [[ "$OSTYPE" == darwin* ]]; then
+    brew update && brew upgrade && brew autoremove && npm update -g
+    sudo mas upgrade
+    xcodes install --latest --experimental-unxip
+  elif [[ "$OSTYPE" == linux* ]]; then
+    sudo apt update && sudo apt upgrade -y && sudo apt autoremove -y
+  fi
+}
 alias cleanup="dotnet nuget locals all -c && brew autoremove && brew cleanup"
 
 ##########
