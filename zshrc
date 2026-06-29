@@ -165,7 +165,7 @@ alias rsyncssh='rsync -Pr --rsh=ssh'
 # Package management
 function update {
   if [[ "$OSTYPE" == darwin* ]]; then
-    brew update && brew upgrade && brew autoremove && npm update -g
+    brew update && brew upgrade && brew autoremove && npm update -g && claude update
     sudo mas upgrade
     xcodes install --latest --experimental-unxip
   elif [[ "$OSTYPE" == linux* ]]; then
