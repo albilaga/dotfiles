@@ -218,12 +218,31 @@ git_auto_cleanup() {
 # Commands:
 #   gwa <branch> [base-ref]  add a worktree (new/existing/remote branch) + cd.
 #                            A NEW branch with no base-ref STACKS on the current
-#                            branch (registers the git town parent); on
+#                            branch using the detected stacking backend; on
 #                            main/master it branches off fresh origin/<default>.
-#   gwl                      pretty list of worktrees
+#   gwl                      pretty list of worktrees (with parent branch)
 #   gws                      fzf-switch (cd) between worktrees
 #   gwrm                     fzf-remove a worktree (protects main/current/dirty)
 #   gwclean                  remove MERGED worktrees, delete branches, prune
+#   gwsync                   sync a worktree's branch with its parent chain
+#
+# Stacking backend (_gw_stack_backend): GitHub remote + the gh-stack extension
+# -> "ghstack"; else git-town -> "town"; else "plain". Override with
+# GIT_WORKTREE_STACK=auto|ghstack|town|plain. It picks how a stacked branch is
+# created and how gwsync integrates its parent:
+#   town     `git town append` creates the branch; `git town sync`, run inside
+#            each worktree bottom-up, integrates it (merge, per git-town's
+#            sync-feature-strategy) and pushes.
+#   ghstack  plain branch creation + our own rebase cascade, one worktree at a
+#            time, then `gwsync --link` publishes the chain via `gh stack link`.
+#            `gh stack add|sync|rebase` are NOT usable here: they keep state in
+#            the per-worktree $GIT_DIR (so each worktree sees a different stack)
+#            and cascade with `git checkout`, which aborts on the first branch
+#            that lives in another worktree. `link` needs neither.
+#   plain    rebase onto the parent, push per worktree.
+# Lineage is always stored in git-town's `git-town-branch.<b>.parent` config key
+# -- plain git config, shared by every worktree -- so gwl, gwsync and git-town
+# itself all agree on the chain.
 # ============================================================================
 
 # --- internals -------------------------------------------------------------
@@ -307,12 +326,14 @@ _gw_parse_worktrees() {
     unfunction _gw_flush 2>/dev/null
 }
 
-# Emit one TSV row per worktree: path<TAB>branch<TAB>head<TAB>flags
-# (branch shown as "(detached)" when empty; flags include main/current/dirty).
-# Drives the pretty list + the fzf picker.
+# Emit one TSV row per worktree:
+#   path<TAB>branch<TAB>head<TAB>flags<TAB>parent
+# (branch shown as "(detached)" when empty; flags include main/current/dirty;
+# parent comes from the offline lineage hint, "-" when unknown). Drives the
+# pretty list + the fzf picker. Keep flags in field 4 -- _gw_fzf_pick matches it.
 _gw_list_tsv() {
     _gw_parse_worktrees
-    local main_top current_top i wtpath branch head flags annotated
+    local main_top current_top i wtpath branch head flags annotated parent
     main_top="$(_gw_main_worktree)"
     current_top="$(git rev-parse --show-toplevel 2>/dev/null)"
     for (( i = 1; i <= ${#_GW_WT_PATH[@]}; i++ )); do
@@ -324,7 +345,9 @@ _gw_list_tsv() {
         [[ "$wtpath" == "$main_top" ]]    && annotated="${annotated:+$annotated,}main"
         [[ "$wtpath" == "$current_top" ]] && annotated="${annotated:+$annotated,}current"
         _gw_is_dirty "$wtpath"            && annotated="${annotated:+$annotated,}dirty"
-        printf '%s\t%s\t%s\t%s\n' "$wtpath" "$branch" "${head:0:9}" "${annotated:--}"
+        parent=""
+        [[ -n "${_GW_WT_BRANCH[$i]}" ]] && parent="$(_gw_parent_hint "${_GW_WT_BRANCH[$i]}")"
+        printf '%s\t%s\t%s\t%s\t%s\n' "$wtpath" "$branch" "${head:0:9}" "${annotated:--}" "${parent:--}"
     done
 }
 
@@ -380,6 +403,291 @@ _gw_set_town_parent() {
     else
         _gw_warning "Could not register git town parent for '$child' (stacked on '$parent' regardless)."
     fi
+}
+
+# --- stacking backend detection --------------------------------------------
+
+# True when origin lives on github.com ($1 = optional pre-fetched remote URL).
+_gw_remote_is_github() {
+    local url="${1-}"
+    [[ -z "$url" ]] && url=$(git remote get-url origin 2>/dev/null || echo "")
+    [[ "$url" == *github.com* ]]
+}
+
+# gh + the github/gh-stack extension. Memoized: `gh extension list` shells out,
+# and this is called once per row in the worktree listing.
+_gw_has_ghstack() {
+    if [[ -z "$_GW_HAS_GHSTACK" ]]; then
+        _GW_HAS_GHSTACK=no
+        if [[ -x "${XDG_DATA_HOME:-$HOME/.local/share}/gh/extensions/gh-stack/gh-stack" ]]; then
+            _GW_HAS_GHSTACK=yes
+        elif command -v gh >/dev/null 2>&1 && gh extension list 2>/dev/null | grep -q 'gh-stack'; then
+            _GW_HAS_GHSTACK=yes
+        fi
+    fi
+    [[ "$_GW_HAS_GHSTACK" == yes ]]
+}
+
+_gw_has_town() { command -v git-town >/dev/null 2>&1; }
+
+# Which tool creates stacked branches and drives sync, echoed as one word:
+#   ghstack | town | plain
+# On GitHub we prefer GitHub's own stacked PRs (gh stack) so the PR chain is
+# real on github.com; anywhere else git-town owns lineage. GIT_WORKTREE_STACK
+# forces a choice (auto|ghstack|town|plain) and falls back with a warning when
+# the requested tool is missing.
+_gw_stack_backend() {
+    case "${GIT_WORKTREE_STACK:-auto}" in
+        ghstack)
+            _gw_has_ghstack && { echo ghstack; return 0; }
+            _gw_warning "GIT_WORKTREE_STACK=ghstack but 'gh stack' is not installed."
+            ;;
+        town)
+            _gw_has_town && { echo town; return 0; }
+            _gw_warning "GIT_WORKTREE_STACK=town but git-town is not installed."
+            ;;
+        plain)
+            echo plain
+            return 0
+            ;;
+    esac
+    if _gw_remote_is_github && _gw_has_ghstack; then echo ghstack; return 0; fi
+    _gw_has_town && { echo town; return 0; }
+    echo plain
+}
+
+# --- lineage (who is this branch stacked on?) -------------------------------
+
+# gh-stack stores each stack in $GIT_DIR/gh-stack -- and for a linked worktree
+# $GIT_DIR is .git/worktrees/<name>, NOT the shared common dir. A stack created
+# by `gh stack` in one worktree is therefore invisible from every other one
+# (verified: `gh stack add` run from two sibling worktrees produced two disjoint
+# stacks). We only ever READ it, as a hint, and offline -- unlike `gh stack
+# view`, which needs the API. Check this worktree's git dir, then the repo's.
+_gw_ghstack_state() {
+    local -a dirs
+    local d top
+    top="$(git rev-parse --show-toplevel 2>/dev/null)"
+    dirs=( "$(git rev-parse --absolute-git-dir 2>/dev/null)"
+           "$(git rev-parse --git-common-dir 2>/dev/null)" )
+    for d in "${dirs[@]}"; do
+        [[ -z "$d" ]] && continue
+        [[ "$d" != /* ]] && d="$top/$d"
+        [[ -f "$d/gh-stack" ]] && { echo "$d/gh-stack"; return 0; }
+    done
+    return 1
+}
+
+# Print the whole gh-stack chain containing $1, trunk first, one branch per
+# line. Returns 1 when there is no state file, no jq, or $1 is in no stack.
+_gw_ghstack_chain() {
+    local branch="$1" state
+    state="$(_gw_ghstack_state)" || return 1
+    if ! command -v jq >/dev/null 2>&1; then
+        _gw_warning "jq not installed; cannot read gh-stack lineage (brew install jq)."
+        return 1
+    fi
+    local out
+    out="$(jq -r --arg b "$branch" '
+        .stacks[]
+        | select([.branches[].branch] | index($b))
+        | [.trunk.branch] + [.branches[].branch]
+        | .[]' "$state" 2>/dev/null)"
+    [[ -z "$out" ]] && return 1
+    echo "$out"
+}
+
+# Cheap, OFFLINE parent lookup used for display: gh-stack's state file first,
+# then git-town's lineage config. Deliberately does not resolve the default
+# branch (that can hit the GitHub API) so listing worktrees stays instant.
+_gw_parent_hint() {
+    local branch="$1" prev="" b
+    while IFS= read -r b; do
+        [[ "$b" == "$branch" ]] && { echo "$prev"; return 0; }
+        prev="$b"
+    done < <(_gw_ghstack_chain "$branch" 2>/dev/null)
+    git config "git-town-branch.${branch}.parent" 2>/dev/null
+}
+
+# Ancestry of $1 from the trunk down to $1 itself, one branch per line, trunk
+# first. $2 = backend, $3 = default branch. gh-stack's state file wins when it
+# knows the branch; otherwise walk git-town's lineage keys, and if nothing is
+# recorded assume the branch sits directly on the default branch.
+_gw_branch_chain() {
+    local branch="$1" backend="$2" default_branch="$3"
+    local -a chain full
+    local b cur parent depth
+
+    if [[ "$backend" == ghstack ]]; then
+        full=( ${(f)"$(_gw_ghstack_chain "$branch")"} )
+        if (( ${#full} )); then
+            for b in "${full[@]}"; do
+                chain+=("$b")
+                [[ "$b" == "$branch" ]] && break
+            done
+            print -l -- "${chain[@]}"
+            return 0
+        fi
+    fi
+
+    cur="$branch"; depth=0
+    while [[ -n "$cur" ]] && (( depth++ < 32 )); do
+        chain=("$cur" "${chain[@]}")
+        [[ "$cur" == "$default_branch" ]] && break
+        parent="$(git config "git-town-branch.${cur}.parent" 2>/dev/null)"
+        if [[ -z "$parent" ]]; then
+            [[ "${chain[1]}" != "$default_branch" ]] && chain=("$default_branch" "${chain[@]}")
+            break
+        fi
+        cur="$parent"
+    done
+    print -l -- "${chain[@]}"
+}
+
+# Parent of $1 ("" when $1 IS the trunk). $2 = backend, $3 = default branch.
+_gw_parent_branch() {
+    local -a chain
+    chain=( ${(f)"$(_gw_branch_chain "$1" "$2" "$3")"} )
+    (( ${#chain} >= 2 )) && echo "${chain[-2]}"
+}
+
+# --- worktree-safe ref plumbing --------------------------------------------
+
+# Path of the worktree that has $1 checked out ("" / return 1 when none does).
+_gw_worktree_of_branch() {
+    local target="$1" i
+    _gw_parse_worktrees
+    for (( i = 1; i <= ${#_GW_WT_BRANCH[@]}; i++ )); do
+        if [[ "${_GW_WT_BRANCH[$i]}" == "$target" ]]; then
+            echo "${_GW_WT_PATH[$i]}"
+            return 0
+        fi
+    done
+    return 1
+}
+
+# Fast-forward local <$1> to origin/<$1> from ANY worktree.
+# `git fetch origin b:b` refuses outright when b is checked out somewhere ("
+# refusing to fetch into branch ... checked out at ..."), so when a worktree
+# owns the branch we run a --ff-only merge inside that worktree instead. This is
+# the fix for the trap where `git town sync` silently no-ops in a linked
+# worktree because its parent branch is stale in the main worktree.
+_gw_ff_branch() {
+    local branch="$1" owner
+    git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1 || return 0
+    git fetch origin "+refs/heads/${branch}:refs/remotes/origin/${branch}" >/dev/null 2>&1
+
+    owner="$(_gw_worktree_of_branch "$branch")"
+    if [[ -z "$owner" ]]; then
+        if git fetch origin "${branch}:${branch}" >/dev/null 2>&1; then
+            _gw_info "  fast-forwarded $branch"
+        else
+            _gw_warning "  $branch has diverged from origin/$branch (left as-is)"
+        fi
+        return 0
+    fi
+
+    if [[ "$(git -C "$owner" rev-parse HEAD)" == "$(git -C "$owner" rev-parse "origin/$branch" 2>/dev/null)" ]]; then
+        return 0
+    fi
+    if _gw_is_dirty "$owner"; then
+        _gw_warning "  $branch is checked out in a dirty worktree ($owner); not fast-forwarding"
+        return 0
+    fi
+    if git -C "$owner" merge --ff-only "origin/$branch" >/dev/null 2>&1; then
+        _gw_info "  fast-forwarded $branch (in ${owner:t})"
+    else
+        _gw_warning "  could not fast-forward $branch (diverged from origin/$branch)"
+    fi
+}
+
+# --- stacked branch creation ------------------------------------------------
+
+# Record who <$1> is stacked on. git-town's config key is the store for every
+# backend: it is plain `git config` (readable with or without git-town), it
+# lives in the common config so all worktrees see it, and git-town picks it up
+# for free when it is installed.
+_gw_set_lineage() {
+    local child="$1" parent="$2"
+    if git config "git-town-branch.${child}.parent" "$parent" >/dev/null 2>&1; then
+        _gw_success "lineage: '$child' is a child of '$parent'"
+    else
+        _gw_warning "Could not record lineage for '$child' (stacked on '$parent' regardless)."
+    fi
+}
+
+# Forget branch $1's lineage after it is gone, hoisting its children onto its
+# own parent (falling back to $2). Without the re-parent, deleting a merged
+# mid-stack branch would leave its children pointing at a ref that no longer
+# exists and gwsync would fail trying to rebase onto it.
+_gw_drop_lineage() {
+    local gone="$1" fallback="$2" grandparent key child
+    grandparent="$(git config "git-town-branch.${gone}.parent" 2>/dev/null)"
+    [[ -z "$grandparent" ]] && grandparent="$fallback"
+
+    for key in ${(f)"$(git config --name-only --get-regexp '^git-town-branch\..*\.parent$' 2>/dev/null)"}; do
+        [[ "$(git config "$key" 2>/dev/null)" == "$gone" ]] || continue
+        child="${${key#git-town-branch.}%.parent}"
+        git config "$key" "$grandparent" >/dev/null 2>&1 \
+            && _gw_info "  re-parented '$child' -> '$grandparent'"
+    done
+    git config --remove-section "git-town-branch.${gone}" >/dev/null 2>&1
+}
+
+# Create $2 as a child of $3 IN THE CURRENT WORKTREE using the stacking tool, so
+# the tool records lineage itself, then put this worktree back on the parent.
+# The caller then attaches the (now free) child branch to its own worktree.
+# $4 = default branch (used to seed missing lineage).
+#
+# Return 2 = "declined, create it plainly": the caller falls back to
+# `git worktree add -b` + _gw_set_lineage. That happens when
+#   - the worktree is dirty (the tool would check the new branch out here and
+#     drag your uncommitted work onto it), or
+#   - the backend is ghstack/plain. gh-stack is deliberately NOT used to create
+#     branches: it keeps its stack in the per-worktree $GIT_DIR, so one
+#     `gh stack add` per worktree yields a pile of disjoint two-branch stacks
+#     instead of one chain. GitHub's side of the stack is published later from
+#     the full chain with `gwsync --link` (`gh stack link`), which is what
+#     gh-stack itself recommends for externally-managed branches.
+_gw_stack_create_branch() {
+    local backend="$1" child="$2" parent="$3" default_branch="$4"
+
+    [[ "$backend" == town ]] || return 2
+
+    if [[ -n "$(git status --porcelain 2>/dev/null)" ]]; then
+        _gw_warning "Uncommitted changes here; skipping $backend stacking to leave them on '$parent'."
+        return 2
+    fi
+
+    case "$backend" in
+        town)
+            # `git town append` aborts with "cannot determine parent branch for
+            # <parent>" when the PARENT's own lineage is unrecorded and it can't
+            # prompt. Seed it from the default branch (branches created by gwa
+            # off main already have this; ones you made by hand may not).
+            if [[ "$parent" != "$default_branch" && -z "$(git config "git-town-branch.${parent}.parent" 2>/dev/null)" ]]; then
+                _gw_info "git town: recording '$parent' as a child of '$default_branch'"
+                git config "git-town-branch.${parent}.parent" "$default_branch"
+            fi
+            _gw_info "git town: appending '$child' on top of '$parent'"
+            # --no-sync/--no-push keep this purely local (create branch + record
+            # lineage). Syncing and pushing are gwsync's job, and town's own sync
+            # cannot touch ancestors that live in other worktrees anyway.
+            if ! git town append "$child" --no-sync --no-push --non-interactive >/dev/null 2>&1; then
+                _gw_error "git town append failed (is git-town.main-branch configured?)."
+                return 1
+            fi
+            ;;
+        *)
+            return 2
+            ;;
+    esac
+
+    if ! git switch --quiet "$parent" 2>/dev/null; then
+        _gw_error "Created '$child' but could not switch this worktree back to '$parent'."
+        return 1
+    fi
+    return 0
 }
 
 # --- gwa : add a worktree for a new/existing/remote branch, then cd ---------
@@ -442,17 +750,19 @@ git_worktree_add() {
     else
         # New branch. Decide the start point:
         #   - explicit base-ref             -> branch off it (prefer origin/<ref>)
-        #   - no base-ref, on a feature br  -> STACK on the current branch (git
-        #                                      town style; based on its LOCAL tip)
+        #   - no base-ref, on a feature br  -> STACK on the current branch, via
+        #                                      the detected backend (gh stack add
+        #                                      / git town append) so the tool owns
+        #                                      the lineage; based on its LOCAL tip
         #   - no base-ref, on default/detached -> branch off fresh origin/<default>
-        local start_point stack_parent=""
+        local start_point stack_parent="" backend rc
         if [[ -n "$base_ref" ]]; then
             start_point="$(_gw_resolve_start_point "$base_ref" "$remote_url")" \
                 || { _gw_error "Base ref '$base_ref' not found locally or on origin."; return 1; }
         elif [[ -n "$current_branch" && "$current_branch" != "$default_branch" \
                 && "$current_branch" != "main" && "$current_branch" != "master" ]]; then
             # Stack: base the child on the current branch's LOCAL tip (it may
-            # carry unpushed work) and record the git town parent afterwards.
+            # carry unpushed work) and record lineage afterwards.
             start_point="$current_branch"
             stack_parent="$current_branch"
         else
@@ -460,14 +770,39 @@ git_worktree_add() {
                 || { _gw_error "Base ref '$default_branch' not found locally or on origin."; return 1; }
         fi
 
-        if [[ -n "$stack_parent" ]]; then
-            _gw_info "Stacking new branch '$branch' on '$stack_parent' at: $wt_path"
-        else
-            _gw_info "Creating new branch '$branch' from '$start_point' at: $wt_path"
+        backend="$(_gw_stack_backend)"
+        rc=2
+        if [[ -n "$stack_parent" && "$backend" != plain ]]; then
+            # Let the stacking tool create the branch here, then hand this
+            # worktree back to the parent; rc=2 means "declined, do it plainly".
+            _gw_stack_create_branch "$backend" "$branch" "$stack_parent" "$default_branch"; rc=$?
+            (( rc == 1 )) && return 1
         fi
-        git worktree add -b "$branch" "$wt_path" "$start_point" \
-            || { _gw_error "git worktree add failed."; return 1; }
-        [[ -n "$stack_parent" ]] && _gw_set_town_parent "$wt_path" "$branch" "$stack_parent"
+
+        if (( rc == 0 )); then
+            _gw_info "Attaching stacked branch '$branch' at: $wt_path"
+            git worktree add "$wt_path" "$branch" \
+                || { _gw_error "git worktree add failed."; return 1; }
+        else
+            if [[ -n "$stack_parent" ]]; then
+                _gw_info "Stacking new branch '$branch' on '$stack_parent' at: $wt_path"
+            else
+                _gw_info "Creating new branch '$branch' from '$start_point' at: $wt_path"
+            fi
+            git worktree add -b "$branch" "$wt_path" "$start_point" \
+                || { _gw_error "git worktree add failed."; return 1; }
+            local lineage_parent="$stack_parent"
+            # Root of a new stack: record it against the default branch too, so
+            # a later append / gwsync knows where this chain terminates.
+            [[ -z "$lineage_parent" && -z "$base_ref" ]] && lineage_parent="$default_branch"
+            if [[ -n "$lineage_parent" ]]; then
+                if _gw_has_town; then
+                    _gw_set_town_parent "$wt_path" "$branch" "$lineage_parent"
+                else
+                    _gw_set_lineage "$branch" "$lineage_parent"
+                fi
+            fi
+        fi
     fi
 
     if [[ -d "$wt_path" ]]; then
@@ -484,13 +819,13 @@ git_worktree_list() {
         _gw_error "Not in a git repository!"
         return 1
     fi
-    _gw_list_tsv | while IFS=$'\t' read -r wtpath branch head flags; do
+    _gw_list_tsv | while IFS=$'\t' read -r wtpath branch head flags parent; do
         local marker="  " fcolor="$_GW_NC"
         [[ "$flags" == *current* ]] && marker="${_GW_GREEN}* ${_GW_NC}"
         [[ "$flags" == *main*    ]] && fcolor="$_GW_CYAN"
         [[ "$flags" == *dirty*   ]] && fcolor="$_GW_YELLOW"
-        printf "${marker}${_GW_CYAN}%-26s${_GW_NC} %-22s ${_GW_BLUE}%-10s${_GW_NC} ${fcolor}%s${_GW_NC}\n" \
-            "$branch" "${wtpath:t}" "$head" "$flags"
+        printf "${marker}${_GW_CYAN}%-26s${_GW_NC} %-14s %-22s ${_GW_BLUE}%-10s${_GW_NC} ${fcolor}%s${_GW_NC}\n" \
+            "$branch" "-> $parent" "${wtpath:t}" "$head" "$flags"
     done
 }
 
@@ -641,6 +976,7 @@ git_worktree_cleanup() {
                 # Worktree gone first -> branch is no longer checked out -> safe to delete.
                 if git branch -D "$branch" >/dev/null 2>&1; then
                     _gw_success "  Deleted branch '$branch'"
+                    _gw_drop_lineage "$branch" "$default_branch"
                 else
                     _gw_warning "  Worktree removed; branch '$branch' not deleted."
                 fi
@@ -658,12 +994,223 @@ git_worktree_cleanup() {
     _gw_success "Worktree cleanup completed. Removed $removed worktree(s)."
 }
 
+# --- gwsync : sync a worktree's branch with its parent chain ----------------
+#
+# Why this exists instead of just calling the backend's own sync:
+#   * `gh stack sync` / `gh stack rebase` cascade with `git checkout`, so they
+#     ABORT the entire stack the moment one branch is checked out in another
+#     worktree ("fatal: 'x' is already used by worktree at ..."), which is the
+#     normal state here. gwsync does the cascade itself, one branch inside its
+#     own worktree; `--link` then publishes the chain with `gh stack link`,
+#     the one gh-stack command that needs neither local state nor a checkout.
+#   * `git town sync` in a linked worktree silently does NOTHING -- exit 0, no
+#     warning -- when its parent is stale and checked out elsewhere. gwsync
+#     fast-forwards the ancestors first, then town's sync behaves correctly.
+#
+# Order is always trunk -> bottom -> top, so each branch integrates a parent
+# that is already up to date.
+git_worktree_sync() {
+    local all=0 dry=0 do_push=1 link=0 strategy=""
+    while (( $# )); do
+        case "$1" in
+            -a|--all)     all=1 ;;
+            -n|--dry-run) dry=1 ;;
+            --no-push)    do_push=0 ;;
+            -l|--link)    link=1 ;;
+            --rebase)     strategy=rebase ;;
+            --merge)      strategy=merge ;;
+            -h|--help)
+                cat >&2 <<'EOF'
+gwsync [options] - sync worktree branches with their parent, up to main/master
+
+  -a, --all       sync every worktree, not just the current branch's chain
+  -n, --dry-run   show what would happen, change nothing
+      --no-push   do not push anything
+  -l, --link      publish the chain as a GitHub stack (gh stack link);
+                  pushes and CREATES PRs for branches that have none
+      --rebase    integrate the parent by rebasing (default: ghstack/plain)
+      --merge     integrate the parent by merging  (default: town)
+EOF
+                return 0 ;;
+            *) _gw_error "Unknown option: $1 (try gwsync --help)"; return 1 ;;
+        esac
+        shift
+    done
+
+    if ! _gw_in_repo; then
+        _gw_error "Not in a git repository!"
+        return 1
+    fi
+
+    local remote_url default_branch backend
+    remote_url=$(git remote get-url origin 2>/dev/null || echo "")
+    default_branch=$(_gw_get_default_branch "$remote_url")
+    backend="$(_gw_stack_backend)"
+    [[ -z "$strategy" ]] && { [[ "$backend" == town ]] && strategy=merge || strategy=rebase; }
+
+    _gw_info "Backend: $backend   Default branch: $default_branch   Strategy: $strategy"
+
+    # git-town hard-errors ("no main branch configured") the moment it runs
+    # without a terminal to prompt on, so adopt the branch we just resolved.
+    if [[ "$backend" == town && -z "$(git config git-town.main-branch 2>/dev/null)" ]]; then
+        (( dry )) || git config git-town.main-branch "$default_branch"
+        _gw_info "Set git-town.main-branch=$default_branch for this repo."
+    fi
+
+    if (( dry )); then
+        _gw_info "(dry run - nothing will be changed)"
+    else
+        _gw_info "Fetching..."
+        git fetch --prune >/dev/null 2>&1 || _gw_warning "git fetch failed"
+        _gw_ff_branch "$default_branch"
+    fi
+
+    # Which branches are we responsible for?
+    local -a targets
+    if (( all )); then
+        _gw_parse_worktrees
+        local i
+        for (( i = 1; i <= ${#_GW_WT_BRANCH[@]}; i++ )); do
+            [[ -n "${_GW_WT_BRANCH[$i]}" ]] || continue
+            [[ "${_GW_WT_BRANCH[$i]}" == "$default_branch" ]] && continue
+            targets+=("${_GW_WT_BRANCH[$i]}")
+        done
+    else
+        local cur
+        cur="$(git branch --show-current 2>/dev/null)"
+        if [[ -z "$cur" ]]; then
+            _gw_error "Detached HEAD - nothing to sync."
+            return 1
+        fi
+        if [[ "$cur" == "$default_branch" ]]; then
+            _gw_success "On $default_branch - already up to date with origin."
+            return 0
+        fi
+        targets=("$cur")
+    fi
+
+    if (( ${#targets} == 0 )); then
+        _gw_info "No feature branches to sync."
+        return 0
+    fi
+
+    # Flatten every target's chain into one bottom-up queue. Chains are emitted
+    # trunk-first, so first-seen wins => a parent always precedes its children.
+    local -a queue seen
+    local t b
+    for t in "${targets[@]}"; do
+        for b in ${(f)"$(_gw_branch_chain "$t" "$backend" "$default_branch")"}; do
+            [[ "$b" == "$default_branch" ]] && continue
+            (( ${seen[(Ie)$b]} )) && continue
+            seen+=("$b")
+            queue+=("$b")
+        done
+    done
+
+    local failed=0 synced=0 parent wt
+    for b in "${queue[@]}"; do
+        parent="$(_gw_parent_branch "$b" "$backend" "$default_branch")"
+        [[ -z "$parent" ]] && parent="$default_branch"
+        wt="$(_gw_worktree_of_branch "$b")"
+
+        echo >&2
+        _gw_info "${_GW_CYAN}${b}${_GW_NC} <- ${_GW_CYAN}${parent}${_GW_NC}"
+
+        if [[ -z "$wt" ]]; then
+            _gw_info "  no worktree for '$b'; fast-forwarding from origin only"
+            (( dry )) || _gw_ff_branch "$b"
+            continue
+        fi
+        if _gw_is_dirty "$wt"; then
+            _gw_warning "  uncommitted changes in $wt - skipping '$b'"
+            continue
+        fi
+        if (( dry )); then
+            _gw_info "  would $strategy '$parent' into '$b' (in $wt)"
+            continue
+        fi
+
+        # Pick up the branch's own remote commits before integrating the parent.
+        _gw_ff_branch "$b"
+
+        if [[ "$backend" == town ]]; then
+            # Ancestors are fresh now, so town's sync actually does its job here
+            # (its own strategy, proposal/lineage updates, push).
+            local -a town_args=(sync --non-interactive)
+            (( do_push )) || town_args+=(--no-push)
+            if git -C "$wt" town "${town_args[@]}"; then
+                _gw_success "  synced $b"
+                (( synced++ ))
+            else
+                _gw_error "  git town sync failed in $wt"
+                _gw_error "  Resolve it there, then 'git -C $wt town continue' and re-run gwsync."
+                failed=1
+                break
+            fi
+            continue
+        fi
+
+        # ghstack / plain: cascade by hand, inside the branch's own worktree.
+        local ok=0
+        if [[ "$strategy" == merge ]]; then
+            git -C "$wt" merge --no-edit "$parent" && ok=1
+        else
+            git -C "$wt" rebase "$parent" && ok=1
+        fi
+        if (( ! ok )); then
+            _gw_error "  $strategy of '$parent' into '$b' hit a conflict."
+            _gw_error "  Resolve it in: $wt   (then 'git -C $wt $strategy --continue' and re-run gwsync)"
+            failed=1
+            break
+        fi
+        _gw_success "  $b is up to date with $parent"
+        (( synced++ ))
+
+        # town's own sync already pushed; everyone else pushes per worktree
+        # (`gh stack push` needs the local stack state, which is per-worktree
+        # and therefore useless here -- see _gw_ghstack_state).
+        if (( do_push )) && [[ "$backend" != town ]]; then
+            if git -C "$wt" push --force-with-lease >/dev/null 2>&1; then
+                _gw_info "  pushed $b"
+            else
+                _gw_warning "  push failed for $b (no upstream yet? 'git -C $wt push -u origin $b')"
+            fi
+        fi
+    done
+
+    # Publish the chain as a GitHub stack. `gh stack link` is the one gh-stack
+    # command that needs no local stack state and checks nothing out, so it is
+    # the only one that survives a worktree-per-branch layout -- gh-stack's own
+    # docs point to it for branches managed by another tool. It PUSHES and
+    # CREATES PRs, so it stays opt-in behind --link.
+    if (( link && failed == 0 && dry == 0 )); then
+        echo >&2
+        if [[ "$backend" != ghstack ]]; then
+            _gw_warning "--link needs the ghstack backend (GitHub remote + gh stack); skipping."
+        elif (( ${#queue} < 2 )); then
+            _gw_warning "--link needs at least two branches in the chain; skipping."
+        else
+            _gw_info "gh stack link ${queue[*]}"
+            gh stack link --base "$default_branch" "${queue[@]}" \
+                || _gw_warning "gh stack link failed (is the repo stacked-PR enabled?)."
+        fi
+    fi
+
+    echo >&2
+    if (( failed )); then
+        _gw_error "gwsync stopped early. $synced branch(es) synced."
+        return 1
+    fi
+    _gw_success "gwsync completed. $synced branch(es) synced."
+}
+
 # --- worktree aliases (gw* namespace) --------------------------------------
 alias gwa='git_worktree_add'          # gwa <branch> [base-ref] : add + cd
-alias gwl='git_worktree_list'         # pretty list
+alias gwl='git_worktree_list'         # pretty list (branch -> parent)
 alias gws='git_worktree_switch'       # fzf cd-switch
 alias gwrm='git_worktree_remove'      # fzf remove (safe)
 alias gwclean='git_worktree_cleanup'  # remove merged worktrees + prune
+alias gwsync='git_worktree_sync'      # sync chain with parent/main (-a = all)
 
 
 alias gst='git status'
