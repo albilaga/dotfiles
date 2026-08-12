@@ -284,8 +284,14 @@ _gw_path_for_branch() {
 }
 
 # True if the worktree at $1 has uncommitted/untracked changes.
+# $2 == "tracked" narrows it to TRACKED changes only. Untracked junk (build
+# output, logs, .env) never blocks a rebase or a --ff-only merge, so sync must
+# not treat it as dirty -- gwrm/gwclean keep the default, where an untracked
+# file IS work you can lose.
 _gw_is_dirty() {
-    [[ -n "$(git -C "$1" status --porcelain 2>/dev/null)" ]]
+    local mode=normal
+    [[ "${2-}" == tracked ]] && mode=no
+    [[ -n "$(git -C "$1" status --porcelain "--untracked-files=$mode" 2>/dev/null)" ]]
 }
 
 # Parse `git worktree list --porcelain` into parallel 1-indexed globals:
@@ -590,7 +596,7 @@ _gw_ff_branch() {
     if [[ "$(git -C "$owner" rev-parse HEAD)" == "$(git -C "$owner" rev-parse "origin/$branch" 2>/dev/null)" ]]; then
         return 0
     fi
-    if _gw_is_dirty "$owner"; then
+    if _gw_is_dirty "$owner" tracked; then
         _gw_warning "  $branch is checked out in a dirty worktree ($owner); not fast-forwarding"
         return 0
     fi
@@ -1107,7 +1113,7 @@ EOF
         done
     done
 
-    local failed=0 synced=0 parent wt
+    local failed=0 synced=0 skipped=0 parent wt target
     for b in "${queue[@]}"; do
         parent="$(_gw_parent_branch "$b" "$backend" "$default_branch")"
         [[ -z "$parent" ]] && parent="$default_branch"
@@ -1119,10 +1125,18 @@ EOF
         if [[ -z "$wt" ]]; then
             _gw_info "  no worktree for '$b'; fast-forwarding from origin only"
             (( dry )) || _gw_ff_branch "$b"
+            # A branch nobody has checked out cannot be rebased/merged, so the
+            # parent stays un-integrated unless it already is. Count that as a
+            # skip -- silently "completing" here is what ships a conflicting PR.
+            if ! git merge-base --is-ancestor "$parent" "$b" 2>/dev/null; then
+                _gw_warning "  '$b' does not contain '$parent' and has no worktree - NOT synced"
+                (( skipped++ ))
+            fi
             continue
         fi
-        if _gw_is_dirty "$wt"; then
+        if _gw_is_dirty "$wt" tracked; then
             _gw_warning "  uncommitted changes in $wt - skipping '$b'"
+            (( skipped++ ))
             continue
         fi
         if (( dry )); then
@@ -1150,20 +1164,31 @@ EOF
             continue
         fi
 
+        # The local parent ref can lag origin -- _gw_ff_branch gives up when the
+        # parent's worktree is dirty or has diverged. Integrating a stale parent
+        # succeeds locally and then conflicts on the PR, so integrate
+        # origin/<parent> whenever the local ref does not already contain it.
+        target="$parent"
+        if git rev-parse --verify --quiet "refs/remotes/origin/$parent" >/dev/null \
+           && ! git merge-base --is-ancestor "origin/$parent" "$parent" 2>/dev/null; then
+            _gw_warning "  local '$parent' is behind origin/$parent - integrating origin/$parent instead"
+            target="origin/$parent"
+        fi
+
         # ghstack / plain: cascade by hand, inside the branch's own worktree.
         local ok=0
         if [[ "$strategy" == merge ]]; then
-            git -C "$wt" merge --no-edit "$parent" && ok=1
+            git -C "$wt" merge --no-edit "$target" && ok=1
         else
-            git -C "$wt" rebase "$parent" && ok=1
+            git -C "$wt" rebase "$target" && ok=1
         fi
         if (( ! ok )); then
-            _gw_error "  $strategy of '$parent' into '$b' hit a conflict."
+            _gw_error "  $strategy of '$target' into '$b' hit a conflict."
             _gw_error "  Resolve it in: $wt   (then 'git -C $wt $strategy --continue' and re-run gwsync)"
             failed=1
             break
         fi
-        _gw_success "  $b is up to date with $parent"
+        _gw_success "  $b is up to date with $target"
         (( synced++ ))
 
         # town's own sync already pushed; everyone else pushes per worktree
@@ -1198,7 +1223,11 @@ EOF
 
     echo >&2
     if (( failed )); then
-        _gw_error "gwsync stopped early. $synced branch(es) synced."
+        _gw_error "gwsync stopped early. $synced branch(es) synced, $skipped skipped."
+        return 1
+    fi
+    if (( skipped )); then
+        _gw_warning "gwsync finished but $skipped branch(es) were NOT synced (see warnings above). $synced synced."
         return 1
     fi
     _gw_success "gwsync completed. $synced branch(es) synced."
