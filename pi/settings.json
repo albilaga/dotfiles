@@ -1,0 +1,24 @@
+{
+  "defaultProvider": "openai-codex",
+  "defaultModel": "gpt-5.6-sol",
+  "defaultThinkingLevel": "medium",
+  "theme": "catppuccin-latte/catppuccin-frappe",
+  "collapseChangelog": true,
+  "hideThinkingBlock": true,
+  "quietStartup": true,
+  "enableInstallTelemetry": false,
+  "enabledModels": [
+    "openai-codex/gpt-5.6-sol:medium",
+    "openai-codex/gpt-5.3-codex-spark:medium",
+    "openrouter/z-ai/glm-5.3-flash:high",
+    "openrouter/deepseek/deepseek-v4-flash-0731:high"
+  ],
+  "packages": [
+    "npm:@dietrichgebert/ponytail",
+    "npm:@quintinshaw/pi-dynamic-workflows",
+    "npm:pi-mcp-adapter",
+    "npm:pi-caveman",
+    "npm:pi-web-access",
+    "npm:pi-catppuccin"
+  ]
+}

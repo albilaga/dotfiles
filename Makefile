@@ -33,7 +33,9 @@ pi-packages:
 		npm:@dietrichgebert/ponytail \
 		npm:@quintinshaw/pi-dynamic-workflows \
 		npm:pi-mcp-adapter \
-		npm:pi-caveman; do \
+		npm:pi-caveman \
+		npm:pi-web-access \
+		npm:pi-catppuccin; do \
 		pi list | grep -Fq "  $$package" || pi install "$$package"; \
 	done
 	gh extension list | grep -q '^gh stack[[:space:]]' || gh extension install github/gh-stack
@@ -41,6 +43,7 @@ pi-packages:
 
 pi: pi-packages
 	mkdir -p $(HOME)/.pi/agent/prompts
+	cp $(DOTFILE_PATH)/pi/settings.json $(HOME)/.pi/agent/settings.json
 	ln -sf $(DOTFILE_PATH)/pi/AGENTS.md $(HOME)/.pi/agent/AGENTS.md
 	ln -sf $(DOTFILE_PATH)/pi/prompts/pr.md $(HOME)/.pi/agent/prompts/pr.md
 
