@@ -1,0 +1,21 @@
+# Herdr config — tracked in dotfiles, symlinked by `make config`.
+# Reference: https://herdr.dev/docs/configuration/
+
+[theme]
+# Follow macOS light/dark; matches the ghostty catppuccin set.
+auto_switch = true
+dark_name = "catppuccin-mocha"
+light_name = "catppuccin-latte"
+
+[keys]
+# Pickers for the gwa-managed worktrees (keyboard counterparts to gws/gwrm).
+open_worktree = "prefix+shift+o"
+remove_worktree = "prefix+shift+backspace"
+
+# lazygit in a session-modal popup (lazygit is in the Brewfile).
+[[keys.command]]
+key = "prefix+alt+g"
+type = "popup"
+command = "lazygit"
+width = "80%"
+height = "80%"
