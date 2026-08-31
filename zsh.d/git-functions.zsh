@@ -216,7 +216,8 @@ git_auto_cleanup() {
 # correct even when invoked from INSIDE a linked worktree.
 #
 # Commands:
-#   gwa <branch> [base-ref]  add a worktree (new/existing/remote branch) + cd.
+#   gwa <branch> [base-ref]  add a worktree (new/existing/remote branch), copy
+#                            paths listed in .gwa-copy-files, then cd.
 #                            A NEW branch with no base-ref STACKS on the current
 #                            branch using the detected stacking backend; on
 #                            main/master it branches off fresh origin/<default>.
@@ -696,9 +697,30 @@ _gw_stack_create_branch() {
     return 0
 }
 
+# Copy ignored/local files into a fresh worktree. Paths in .gwa-copy-files are
+# relative to the current worktree; blank lines and comments are ignored.
+_gw_copy_files() {
+    local source_root="$1" wt_path="$2" file
+    [[ -f "$source_root/.gwa-copy-files" ]] || return 0
+
+    while IFS= read -r file || [[ -n "$file" ]]; do
+        [[ -z "$file" || "$file" == \#* ]] && continue
+        case "$file" in
+            /*|../*|*/../*|*/..) _gw_warning "Skipping unsafe copy path: $file"; continue ;;
+        esac
+        if [[ -f "$source_root/$file" ]]; then
+            mkdir -p "$wt_path/${file:h}" && cp -p "$source_root/$file" "$wt_path/$file" \
+                && _gw_info "Copied $file"
+        else
+            _gw_warning "Copy path is not a file: $file"
+        fi
+    done < "$source_root/.gwa-copy-files"
+    cp -p "$source_root/.gwa-copy-files" "$wt_path/.gwa-copy-files"
+}
+
 # --- gwa : add a worktree for a new/existing/remote branch, then cd ---------
 git_worktree_add() {
-    local branch="$1" base_ref="$2"
+    local branch="$1" base_ref="$2" source_root
 
     if ! _gw_in_repo; then
         _gw_error "Not in a git repository!"
@@ -708,6 +730,7 @@ git_worktree_add() {
         _gw_error "Usage: gwa <branch> [base-ref]"
         return 1
     fi
+    source_root="$(git rev-parse --show-toplevel 2>/dev/null)"
 
     local remote_url default_branch wt_path current_branch
     remote_url=$(git remote get-url origin 2>/dev/null || echo "")
@@ -812,6 +835,7 @@ git_worktree_add() {
     fi
 
     if [[ -d "$wt_path" ]]; then
+        _gw_copy_files "$source_root" "$wt_path"
         cd "$wt_path" && _gw_success "Now in worktree: $wt_path  (branch: $branch)"
     else
         _gw_error "Worktree dir missing after add: $wt_path"
