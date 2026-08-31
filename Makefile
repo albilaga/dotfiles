@@ -27,5 +27,10 @@ zed:
 	mkdir -p $(HOME)/.config/zed
 	ln -sf $(DOTFILE_PATH)/zed_config.json $(HOME)/.config/zed/settings.json
 
-all: git zsh config zed
-.PHONY: all git zsh config zed
+pi:
+	mkdir -p $(HOME)/.pi/agent/prompts
+	ln -sf $(DOTFILE_PATH)/pi/AGENTS.md $(HOME)/.pi/agent/AGENTS.md
+	ln -sf $(DOTFILE_PATH)/pi/prompts/pr.md $(HOME)/.pi/agent/prompts/pr.md
+
+all: git zsh config zed pi
+.PHONY: all git zsh config zed pi
