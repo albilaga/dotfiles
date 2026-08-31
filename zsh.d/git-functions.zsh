@@ -697,6 +697,18 @@ _gw_stack_create_branch() {
     return 0
 }
 
+# Surface a worktree as a Herdr worktree workspace, grouped under the parent
+# repo's workspace. No-op outside a Herdr pane (no HERDR_ENV) or without the
+# CLI; best-effort so a missing/stale server never blocks the git operation.
+_gw_herdr_open_worktree() {
+    local repo_root="$1" wt_path="$2"
+    [[ "$HERDR_ENV" == 1 ]] || return 0
+    command -v herdr >/dev/null 2>&1 || return 0
+    herdr worktree open --cwd "$repo_root" --path "$wt_path" --focus >/dev/null 2>&1 \
+        && _gw_info "herdr: focused workspace for ${wt_path:t}"
+    return 0
+}
+
 # Copy ignored/local files into a fresh worktree. Paths in .gwa-copy-files are
 # relative to the current worktree; blank lines and comments are ignored.
 _gw_copy_files() {
@@ -749,6 +761,7 @@ git_worktree_add() {
         if [[ "${_GW_WT_BRANCH[$i]}" == "$branch" ]]; then
             _gw_info "Branch '$branch' already checked out -> switching."
             cd "${_GW_WT_PATH[$i]}" && _gw_success "Now in ${_GW_WT_PATH[$i]}"
+            _gw_herdr_open_worktree "$source_root" "${_GW_WT_PATH[$i]}"
             return $?
         fi
     done
@@ -837,6 +850,7 @@ git_worktree_add() {
     if [[ -d "$wt_path" ]]; then
         _gw_copy_files "$source_root" "$wt_path"
         cd "$wt_path" && _gw_success "Now in worktree: $wt_path  (branch: $branch)"
+        _gw_herdr_open_worktree "$source_root" "$wt_path"
     else
         _gw_error "Worktree dir missing after add: $wt_path"
         return 1
@@ -870,11 +884,13 @@ git_worktree_switch() {
         git_worktree_list
         return 1
     fi
-    local target
+    local target repo_root
+    repo_root="$(git rev-parse --show-toplevel 2>/dev/null)"
     target="$(_gw_fzf_pick 'cd to worktree')"
     [[ -z "$target" ]] && return 0
     if [[ -d "$target" ]]; then
         cd "$target" && _gw_success "Now in $(pwd)"
+        _gw_herdr_open_worktree "$repo_root" "$target"
     else
         _gw_error "Path no longer exists: $target"
         return 1
