@@ -15,6 +15,7 @@
 - Avoid interfaces for single implementations. Add one only for a real substitution boundary, such as multiple implementations, a required test double, or implementations that genuinely change often.
 - Do not abstract dependencies for hypothetical replacement. Assume infrastructure such as database technology stays unless requirements say otherwise.
 - Use narrowest available visibility: `private`, then package/internal, then `public`. Never widen production visibility only for testing.
+- Prefer precise types. Use `any`, `dynamic`, or equivalent loose types only when no safer alternative exists.
 
 ## Tests
 
