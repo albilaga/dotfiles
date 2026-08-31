@@ -53,6 +53,7 @@ make git      # Install git configs only
 make zsh      # Install zsh configs only
 make config   # Install application configs only
 make zed      # Install Zed editor settings only
+make pi       # Install pi coding agent configs, packages, and settings
 ```
 
 ### 4. Set up GPG signing (macOS)
@@ -152,6 +153,11 @@ Any `.sh` files in this directory will be automatically sourced by zsh but won't
 ├── gitignore                # Global gitignore
 ├── zshrc                    # Main zsh configuration
 ├── zed_config.json         # Zed editor settings
+├── pi/                      # Pi coding agent configs
+│   ├── AGENTS.md            # Global coding instructions
+│   ├── settings.json        # Default settings (theme, models, packages)
+│   └── prompts/
+│       └── pr.md            # /pr prompt template
 ├── zsh.d/                   # Modular zsh configs
 │   ├── aliases.Darwin.sh
 │   ├── env.Darwin.sh

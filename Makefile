@@ -27,5 +27,27 @@ zed:
 	mkdir -p $(HOME)/.config/zed
 	ln -sf $(DOTFILE_PATH)/zed_config.json $(HOME)/.config/zed/settings.json
 
-all: git zsh config zed
-.PHONY: all git zsh config zed
+pi-packages:
+	command -v pi >/dev/null || npm install -g --ignore-scripts @earendil-works/pi-coding-agent
+	for package in \
+		npm:@dietrichgebert/ponytail \
+		npm:@quintinshaw/pi-dynamic-workflows \
+		npm:pi-mcp-adapter \
+		npm:pi-caveman \
+		npm:pi-web-access \
+		npm:pi-catppuccin; do \
+		pi list | grep -Fq "  $$package" || pi install "$$package"; \
+	done
+	gh extension list | grep -q '^gh stack[[:space:]]' || gh extension install github/gh-stack
+	test -f $(HOME)/.agents/skills/gh-stack/SKILL.md || npx --yes skills add github/gh-stack@gh-stack -g -y
+
+pi: pi-packages
+	mkdir -p $(HOME)/.pi/agent/prompts
+	cp $(DOTFILE_PATH)/pi/settings.json $(HOME)/.pi/agent/settings.json
+	mkdir -p $(HOME)/.pi/workflows
+	cp $(DOTFILE_PATH)/pi/workflows-model-tiers.json $(HOME)/.pi/workflows/model-tiers.json
+	ln -sf $(DOTFILE_PATH)/pi/AGENTS.md $(HOME)/.pi/agent/AGENTS.md
+	ln -sf $(DOTFILE_PATH)/pi/prompts/pr.md $(HOME)/.pi/agent/prompts/pr.md
+
+all: git zsh config zed pi
+.PHONY: all git zsh config zed pi pi-packages
