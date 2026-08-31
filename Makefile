@@ -40,6 +40,7 @@ pi-packages:
 	done
 	gh extension list | grep -q '^gh stack[[:space:]]' || gh extension install github/gh-stack
 	test -f $(HOME)/.agents/skills/gh-stack/SKILL.md || npx --yes skills add github/gh-stack@gh-stack -g -y
+	test -f $(HOME)/.agents/skills/herdr/SKILL.md || npx --yes skills add herdrdev/herdr --skill herdr -g -y
 
 pi: pi-packages
 	mkdir -p $(HOME)/.pi/agent/prompts
