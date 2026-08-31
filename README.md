@@ -173,6 +173,17 @@ Any `.sh` files in this directory will be automatically sourced by zsh but won't
 - **`po`** - Checkout your own pull requests
 - **`pr`** - Open current PR in browser
 
+### Worktree File Copying
+
+`gwa` copies local files listed in `.gwa-copy-files` into each new worktree. Paths are relative to repository root; blank lines and `#` comments are ignored:
+
+```text
+# Local environment files
+.env
+.env.local
+config/local.json
+```
+
 ### Git Aliases
 
 Common shortcuts defined in `gitconfig` and `zsh.d/git-functions.zsh`:
