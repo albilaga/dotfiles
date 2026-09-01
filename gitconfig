@@ -1,7 +1,7 @@
 [user]
     name = Albilaga Linggra Pradana
     email = git@albilaga.id
-	signingkey = CAC181E8E302CA4C0621B630178E5E0A909D260A
+	signingkey = 0419B11D6BEE70B3F58AB572CBB403C05821067E
 
 [alias]
     co = checkout
