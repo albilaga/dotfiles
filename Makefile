@@ -27,6 +27,9 @@ zed:
 	mkdir -p $(HOME)/.config/zed
 	ln -sf $(DOTFILE_PATH)/zed_config.json $(HOME)/.config/zed/settings.json
 
+herdr:
+	herdr plugin list --json | grep -Fq '"plugin_id":"herdr-automatic-rename"' || herdr plugin install qu8n/herdr-automatic-rename --yes
+
 pi-packages:
 	command -v pi >/dev/null || npm install -g --ignore-scripts @earendil-works/pi-coding-agent
 	for package in \
@@ -53,5 +56,5 @@ pi: pi-packages
 	ln -sf $(DOTFILE_PATH)/pi/AGENTS.md $(HOME)/.pi/agent/AGENTS.md
 	ln -sf $(DOTFILE_PATH)/pi/prompts/pr.md $(HOME)/.pi/agent/prompts/pr.md
 
-all: git zsh config zed pi
-.PHONY: all git zsh config zed pi pi-packages
+all: git zsh config zed herdr pi
+.PHONY: all git zsh config zed herdr pi pi-packages

@@ -1,6 +1,9 @@
 # Herdr config — tracked in dotfiles, symlinked by `make config`.
 # Reference: https://herdr.dev/docs/configuration/
 
+[ui]
+prompt_new_tab_name = false
+
 [theme]
 # Follow macOS light/dark; matches the ghostty catppuccin set.
 auto_switch = true
@@ -8,6 +11,13 @@ dark_name = "catppuccin-mocha"
 light_name = "catppuccin-latte"
 
 [keys]
+switch_tab = "cmd+1..9"
+new_tab = "cmd+t"
+new_workspace = "cmd+n"
+new_worktree = "cmd+shift+n"
+split_vertical = "cmd+d"
+goto = "cmd+/"
+
 # Pickers for the gwa-managed worktrees (keyboard counterparts to gws/gwrm).
 open_worktree = "prefix+shift+o"
 remove_worktree = "prefix+shift+backspace"

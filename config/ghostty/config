@@ -11,6 +11,30 @@ keybind = ctrl+l=goto_split:right
 keybind = super+left=previous_tab
 keybind = super+right=next_tab
 
+# Let Herdr handle tabs, workspaces, worktrees, and splits.
+keybind = super+1=unbind
+keybind = super+digit_1=unbind
+keybind = super+2=unbind
+keybind = super+digit_2=unbind
+keybind = super+3=unbind
+keybind = super+digit_3=unbind
+keybind = super+4=unbind
+keybind = super+digit_4=unbind
+keybind = super+5=unbind
+keybind = super+digit_5=unbind
+keybind = super+6=unbind
+keybind = super+digit_6=unbind
+keybind = super+7=unbind
+keybind = super+digit_7=unbind
+keybind = super+8=unbind
+keybind = super+digit_8=unbind
+keybind = super+9=unbind
+keybind = super+digit_9=unbind
+keybind = super+t=unbind
+keybind = super+n=unbind
+keybind = super+shift+n=unbind
+keybind = super+d=unbind
+
 # open scrollback: cmd-shift-j
 
 scrollback-limit = 1000000000
