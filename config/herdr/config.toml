@@ -29,3 +29,8 @@ type = "popup"
 command = "lazygit"
 width = "80%"
 height = "80%"
+
+[[keys.command]]
+key = "cmd+r"
+type = "plugin_action"
+command = "persiyanov.reviewr.toggle"

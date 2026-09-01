@@ -29,6 +29,7 @@ zed:
 
 herdr:
 	herdr plugin list --json | grep -Fq '"plugin_id":"herdr-automatic-rename"' || herdr plugin install qu8n/herdr-automatic-rename --yes
+	herdr plugin list --json | grep -Fq '"plugin_id":"persiyanov.reviewr"' || herdr plugin install persiyanov/herdr-reviewr --yes
 
 pi-packages:
 	command -v pi >/dev/null || npm install -g --ignore-scripts @earendil-works/pi-coding-agent
