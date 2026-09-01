@@ -53,7 +53,7 @@ pi: pi-packages
 	mkdir -p $(HOME)/.pi/agent/prompts
 	cp $(DOTFILE_PATH)/pi/settings.json $(HOME)/.pi/agent/settings.json
 	mkdir -p $(HOME)/.pi/workflows
-	cp $(DOTFILE_PATH)/pi/workflows-model-tiers.json $(HOME)/.pi/workflows/model-tiers.json
+	ln -sf $(DOTFILE_PATH)/pi/workflows-model-tiers.json $(HOME)/.pi/workflows/model-tiers.json
 	ln -sf $(DOTFILE_PATH)/pi/AGENTS.md $(HOME)/.pi/agent/AGENTS.md
 	ln -sf $(DOTFILE_PATH)/pi/prompts/pr.md $(HOME)/.pi/agent/prompts/pr.md
 

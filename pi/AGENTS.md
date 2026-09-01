@@ -2,9 +2,8 @@
 
 ## Workflow
 
-- Never create commits except synchronization and simplification commits explicitly authorized by `/pr`. Leave all other commits to user.
-- Work in small, reviewable steps.
-- After each step, report what changed and wait for explicit user approval before continuing. Invoking `/pr` authorizes its full workflow without intermediate approval.
+- Keep each commit focused, reviewable, and independently buildable.
+- Commit as you go. Stop and ask for human review only when uncommitted changes grow too large to review in one pass.
 
 ## Implementation
 
