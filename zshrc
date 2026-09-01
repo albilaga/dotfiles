@@ -325,6 +325,10 @@ if type atuin &> /dev/null; then
   eval "$(atuin init zsh)"
 fi
 
+for hook in ${HOME}/.config/herdr/plugins/github/herdr-automatic-rename-*/shell/hook.zsh(N); do
+  source $hook; break
+done
+
 # jenv
 eval "$(jenv init -)"
 jenv enable-plugin export
