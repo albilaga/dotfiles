@@ -12,6 +12,7 @@ light_name = "catppuccin-latte"
 
 [keys]
 switch_tab = "cmd+1..9"
+switch_workspace = "cmd+shift+1..9"
 new_tab = "cmd+t"
 new_workspace = "cmd+n"
 new_worktree = "cmd+shift+n"
