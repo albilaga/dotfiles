@@ -15,7 +15,6 @@
   ],
   "packages": [
     "npm:@dietrichgebert/ponytail",
-    "npm:@quintinshaw/pi-dynamic-workflows",
     "npm:pi-subagents",
     "npm:pi-mcp-adapter",
     "npm:pi-caveman",
