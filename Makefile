@@ -36,6 +36,7 @@ pi-packages:
 	for package in \
 		npm:@dietrichgebert/ponytail \
 		npm:@quintinshaw/pi-dynamic-workflows \
+		npm:pi-subagents \
 		npm:pi-mcp-adapter \
 		npm:pi-caveman \
 		npm:pi-web-access \
