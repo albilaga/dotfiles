@@ -157,7 +157,8 @@ Any `.sh` files in this directory will be automatically sourced by zsh but won't
 │   ├── AGENTS.md            # Global coding instructions
 │   ├── settings.json        # Default settings (theme, models, packages)
 │   └── prompts/
-│       └── pr.md            # /pr prompt template
+│       ├── pr.md            # /pr prompt template
+│       └── workflow.md      # /workflow prompt template
 ├── zsh.d/                   # Modular zsh configs
 │   ├── aliases.Darwin.sh
 │   ├── env.Darwin.sh

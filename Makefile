@@ -32,7 +32,7 @@ herdr:
 	herdr plugin list --json | grep -Fq '"plugin_id":"persiyanov.reviewr"' || herdr plugin install persiyanov/herdr-reviewr --yes
 
 pi-packages:
-	command -v pi >/dev/null || npm install -g --ignore-scripts @earendil-works/pi-coding-agent
+	npm install -g --ignore-scripts @earendil-works/pi-coding-agent
 	for package in \
 		npm:@dietrichgebert/ponytail \
 		npm:pi-subagents \
@@ -52,9 +52,9 @@ pi-packages:
 pi: pi-packages
 	mkdir -p $(HOME)/.pi/agent/prompts
 	cp $(DOTFILE_PATH)/pi/settings.json $(HOME)/.pi/agent/settings.json
+	rm -f $(HOME)/.pi/workflows/model-tiers.json
 	ln -sf $(DOTFILE_PATH)/pi/AGENTS.md $(HOME)/.pi/agent/AGENTS.md
-	ln -sf $(DOTFILE_PATH)/pi/prompts/pr.md $(HOME)/.pi/agent/prompts/pr.md
-	ln -sf $(DOTFILE_PATH)/pi/prompts/workflow.md $(HOME)/.pi/agent/prompts/workflow.md
+	ln -sf $(DOTFILE_PATH)/pi/prompts/*.md $(HOME)/.pi/agent/prompts/
 
 all: git zsh config zed herdr pi
 .PHONY: all git zsh config zed herdr pi pi-packages
