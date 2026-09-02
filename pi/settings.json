@@ -9,10 +9,19 @@
   "enableInstallTelemetry": false,
   "enabledModels": [
     "openai-codex/gpt-5.6-sol:medium",
-    "openai-codex/gpt-5.3-codex-spark:medium",
     "openrouter/z-ai/glm-5.3-flash:high",
     "openrouter/deepseek/deepseek-v4-flash-0731:high"
   ],
+  "subagents": {
+    "agentOverrides": {
+      "scout": { "model": "openrouter/deepseek/deepseek-v4-flash-0731" },
+      "delegate": { "model": "openrouter/z-ai/glm-5.3-flash" },
+      "researcher": { "model": "openrouter/z-ai/glm-5.3-flash" },
+      "worker": { "model": "openai-codex/gpt-5.6-sol" },
+      "reviewer": { "model": "openai-codex/gpt-5.6-sol" },
+      "oracle": { "model": "openai-codex/gpt-5.6-sol" }
+    }
+  },
   "packages": [
     "npm:@dietrichgebert/ponytail",
     "npm:pi-subagents",
