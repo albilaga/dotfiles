@@ -54,6 +54,7 @@ pi: pi-packages
 	cp $(DOTFILE_PATH)/pi/settings.json $(HOME)/.pi/agent/settings.json
 	ln -sf $(DOTFILE_PATH)/pi/AGENTS.md $(HOME)/.pi/agent/AGENTS.md
 	ln -sf $(DOTFILE_PATH)/pi/prompts/pr.md $(HOME)/.pi/agent/prompts/pr.md
+	ln -sf $(DOTFILE_PATH)/pi/prompts/workflow.md $(HOME)/.pi/agent/prompts/workflow.md
 
 all: git zsh config zed herdr pi
 .PHONY: all git zsh config zed herdr pi pi-packages
