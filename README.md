@@ -156,6 +156,7 @@ Any `.sh` files in this directory will be automatically sourced by zsh but won't
 ├── pi/                      # Pi coding agent configs
 │   ├── AGENTS.md            # Global coding instructions
 │   ├── settings.json        # Default settings (theme, models, packages)
+│   ├── keybindings.json     # Keybinding overrides
 │   └── prompts/
 │       ├── pr.md            # /pr prompt template
 │       └── workflow.md      # /workflow prompt template
