@@ -35,6 +35,7 @@ pi-packages:
 	npm install -g --ignore-scripts @earendil-works/pi-coding-agent
 	for package in \
 		npm:@dietrichgebert/ponytail \
+		npm:@pi-archimedes/image-paste \
 		npm:pi-subagents \
 		npm:pi-mcp-adapter \
 		npm:pi-caveman \
@@ -52,6 +53,7 @@ pi-packages:
 pi: pi-packages
 	mkdir -p $(HOME)/.pi/agent/prompts
 	cp $(DOTFILE_PATH)/pi/settings.json $(HOME)/.pi/agent/settings.json
+	ln -sf $(DOTFILE_PATH)/pi/keybindings.json $(HOME)/.pi/agent/keybindings.json
 	rm -f $(HOME)/.pi/workflows/model-tiers.json
 	ln -sf $(DOTFILE_PATH)/pi/AGENTS.md $(HOME)/.pi/agent/AGENTS.md
 	ln -sf $(DOTFILE_PATH)/pi/prompts/*.md $(HOME)/.pi/agent/prompts/
