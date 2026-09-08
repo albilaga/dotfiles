@@ -1153,11 +1153,66 @@ EOF
         done
     done
 
-    local failed=0 synced=0 skipped=0 parent wt target
+    local failed=0 synced=0 skipped=0 parent wt target rebase_from
     for b in "${queue[@]}"; do
+        rebase_from=""
         parent="$(_gw_parent_branch "$b" "$backend" "$default_branch")"
         [[ -z "$parent" ]] && parent="$default_branch"
         wt="$(_gw_worktree_of_branch "$b")"
+
+        # Parent's work already landed somewhere up the chain? Two ways that
+        # happens: its PR merged straight into the trunk (GitHub flow), or --
+        # git-town flow -- it was merged into its own parent, which then holds
+        # its commits. Find the LOWEST chain ancestor containing it and re-parent
+        # there (main -> A -> B -> C, B merged into A => C re-parents to A, not
+        # main). Rebase from below the old parent so its commits are not replayed.
+        # Children higher up get the same check on their own pass, so a
+        # fully-landed prefix collapses level by level.
+        if [[ "$parent" != "$default_branch" ]]; then
+            local -a chain
+            chain=( ${(f)"$(_gw_branch_chain "$b" "$backend" "$default_branch")"} )
+            local pi=${chain[(Ie)$parent]} up merged_into=""
+            for (( up = pi - 1; up >= 1; up-- )); do
+                if [[ "${chain[$up]}" == "$default_branch" ]]; then
+                    # Trunk: gh PR check first (catches squash-merges that
+                    # ancestry cannot see), then ancestry.
+                    if _gw_is_branch_merged "$parent" "$default_branch" "$remote_url"; then
+                        merged_into="$default_branch"; break
+                    fi
+                elif git merge-base --is-ancestor "$parent" "${chain[$up]}" 2>/dev/null; then
+                    merged_into="${chain[$up]}"; break
+                fi
+            done
+            if [[ -n "$merged_into" ]]; then
+                _gw_info "  parent '$parent' is already merged -> re-parenting '$b' onto '$merged_into'"
+                local merged_parent="$parent"
+                parent="$merged_into"
+                rebase_from="$merged_parent"
+                if (( ! dry )); then
+                    git config "git-town-branch.$b.parent" "$parent"
+                    # Also fix the gh-stack state file (source of _gw_branch_chain
+                    # on the ghstack backend): drop the merged branch from every
+                    # stack, dropping stacks left with no branches. ponytail: we
+                    # can only rewrite the copy visible from THIS worktree's
+                    # $GIT_DIR; sibling worktrees stay stale until their own
+                    # gwsync re-detects the merged parent.
+                    if [[ "$backend" == ghstack ]]; then
+                        local state tmp
+                        state="$(_gw_ghstack_state)" || state=""
+                        if [[ -n "$state" ]] && command -v jq >/dev/null 2>&1; then
+                            tmp=$(mktemp)
+                            if jq --arg gone "$merged_parent" \
+                                '.stacks |= map((.branches |= map(select(.branch != $gone))) | select((.branches | length) > 0))' \
+                                "$state" > "$tmp" 2>/dev/null && mv "$tmp" "$state"; then
+                                _gw_info "  gh-stack state: dropped merged '$merged_parent'"
+                            else
+                                rm -f "$tmp"
+                            fi
+                        fi
+                    fi
+                fi
+            fi
+        fi
 
         echo >&2
         _gw_info "${_GW_CYAN}${b}${_GW_NC} <- ${_GW_CYAN}${parent}${_GW_NC}"
@@ -1219,6 +1274,8 @@ EOF
         local ok=0
         if [[ "$strategy" == merge ]]; then
             git -C "$wt" merge --no-edit "$target" && ok=1
+        elif [[ -n "$rebase_from" ]]; then
+            git -C "$wt" rebase --onto "$target" "$rebase_from" && ok=1
         else
             git -C "$wt" rebase "$target" && ok=1
         fi
