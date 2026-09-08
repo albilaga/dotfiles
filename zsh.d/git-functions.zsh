@@ -1243,7 +1243,7 @@ EOF
                         state="$(_gw_ghstack_state)" || state=""
                         if [[ -n "$state" ]] && command -v jq >/dev/null 2>&1; then
                             tmp=$(mktemp)
-                            if jq --arg gone "$rebase_from" \
+                            if jq --arg gone "$parent" \
                                 '.stacks |= map((.branches |= map(select(.branch != $gone))) | select((.branches | length) > 0))' \
                                 "$state" > "$tmp" 2>/dev/null && mv "$tmp" "$state"; then
                                 _gw_info "  gh-stack state: dropped merged '$rebase_from'"
