@@ -105,6 +105,21 @@ _gw_is_branch_merged() {
     _gw_is_merged_git "$branch" "$default_branch"
 }
 
+# Merged INTO $2 specifically (not just any merged PR): gh PR base must equal
+# $2; falls back to git ancestry for non-GitHub remotes / gh-less setups.
+_gw_is_merged_into() {
+    local branch="$1" base="$2" remote_url="$3"
+    if [[ "$remote_url" == *"github.com"* ]] && _gw_check_gh_cli quiet; then
+        local base_ref
+        base_ref=$(gh pr list --repo "$(_gw_github_repo_path "$remote_url")" \
+            --head "$branch" --state merged --json baseRefName \
+            --jq '.[0].baseRefName' 2>/dev/null)
+        [[ "$base_ref" == "$base" ]] && return 0
+        return 1
+    fi
+    _gw_is_merged_git "$branch" "$base"
+}
+
 # ============================================================================
 # Branch cleanup
 # ----------------------------------------------------------------------------
@@ -549,13 +564,6 @@ _gw_branch_chain() {
         cur="$parent"
     done
     print -l -- "${chain[@]}"
-}
-
-# Parent of $1 ("" when $1 IS the trunk). $2 = backend, $3 = default branch.
-_gw_parent_branch() {
-    local -a chain
-    chain=( ${(f)"$(_gw_branch_chain "$1" "$2" "$3")"} )
-    (( ${#chain} >= 2 )) && echo "${chain[-2]}"
 }
 
 # --- worktree-safe ref plumbing --------------------------------------------
@@ -1198,16 +1206,29 @@ EOF
                 if [[ "${chain[$up]}" == "$default_branch" ]]; then
                     # Trunk: gh PR check first (catches squash-merges that
                     # ancestry cannot see), then ancestry.
-                    if _gw_is_branch_merged "$parent" "$default_branch" "$remote_url"; then
+                    if _gw_is_merged_into "$parent" "$default_branch" "$remote_url"; then
                         merged_into="$default_branch"; break
                     fi
                 elif git merge-base --is-ancestor "$parent" "${chain[$up]}" 2>/dev/null; then
                     merged_into="${chain[$up]}"; break
                 fi
             done
+            # The merged parent's ref may already be gone (branch deleted after
+            # its PR merged). One existing only on origin is fine -- rebase from
+            # origin/<parent> -- but one existing nowhere would fatal the rebase,
+            # so leave the lineage untouched and skip the re-parent.
+            if [[ -n "$merged_into" ]] \
+               && ! git rev-parse --verify --quiet "$parent" >/dev/null 2>&1; then
+                if git rev-parse --verify --quiet "origin/$parent" >/dev/null 2>&1; then
+                    rebase_from="origin/$parent"
+                else
+                    _gw_warning "  merged parent '$parent' no longer exists; keeping '$b' stacked on '$parent'"
+                    merged_into=""
+                fi
+            fi
             if [[ -n "$merged_into" ]]; then
                 _gw_info "  parent '$parent' is already merged -> re-parenting '$b' onto '$merged_into'"
-                rebase_from="$parent"
+                [[ -z "$rebase_from" ]] && rebase_from="$parent"
                 parent="$merged_into"
                 if (( ! dry )); then
                     git config "git-town-branch.$b.parent" "$parent"
