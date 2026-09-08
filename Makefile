@@ -1,5 +1,8 @@
 UNAME := $(shell uname)
-DOTFILE_PATH := $(shell pwd)
+# Always point at the main checkout, not the worktree make ran in -
+# worktrees are throwaway, symlinks here must survive their removal.
+GIT_COMMON_DIR := $(shell git rev-parse --path-format=absolute --git-common-dir 2>/dev/null || pwd)/.git
+DOTFILE_PATH := $(patsubst %/.git,%,$(patsubst %/,%,$(dir $(GIT_COMMON_DIR))))
 
 $(HOME)/.%: %
 	ln -sf $(DOTFILE_PATH)/$^ $@
