@@ -21,11 +21,13 @@ export default function (pi: ExtensionAPI) {
 
 		const m = ctx.model;
 		if (m && m.provider === "openrouter" && BLOCKED.test(m.id)) {
-			const fallback = ctx.modelRegistry.find("openai-codex", m.id.replace(/^~?openai\//, ""));
+			const fallback = ctx.modelRegistry.find("openai-codex", m.id.replace(BLOCKED, ""));
 			if (fallback) {
-				await pi.setModel(fallback);
+				const ok = await pi.setModel(fallback);
 				if (ctx.hasUI) {
-					ctx.ui.notify(`OpenAI models via OpenRouter are blocked; using openai-codex/${fallback.id}`, "warning");
+					ok
+						? ctx.ui.notify(`OpenAI models via OpenRouter are blocked; using openai-codex/${fallback.id}`, "warning")
+						: ctx.ui.notify(`Reroute to openai-codex/${fallback.id} failed; blocked model ${m.id} is still active`, "warning");
 				}
 			} else if (ctx.hasUI) {
 				ctx.ui.notify(`OpenAI models via OpenRouter are blocked; ${m.id} has no openai-codex equivalent`, "warning");
