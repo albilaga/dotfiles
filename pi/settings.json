@@ -14,6 +14,11 @@
     "openrouter/deepseek/deepseek-v4-flash-0731:high"
   ],
   "subagents": {
+    "modelScope": {
+      "enforce": true,
+      "strict": true,
+      "allow": ["openrouter/*", "openai-codex/gpt-5*"]
+    },
     "agentOverrides": {
       "scout": { "model": "openrouter/deepseek/deepseek-v4-flash-0731" },
       "delegate": { "model": "openrouter/z-ai/glm-5.3-flash" },
