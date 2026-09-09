@@ -9,6 +9,7 @@
   "enableInstallTelemetry": false,
   "enabledModels": [
     "openai-codex/gpt-5.6-sol:medium",
+    "openai-codex/gpt-6-astra:low",
     "openrouter/z-ai/glm-5.3-flash:high",
     "openrouter/deepseek/deepseek-v4-flash-0731:high"
   ],
