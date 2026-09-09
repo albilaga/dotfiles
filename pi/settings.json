@@ -11,7 +11,7 @@
     "openai-codex/gpt-5.6-sol:medium",
     "openai-codex/gpt-6-astra:low",
     "openrouter/z-ai/glm-5.3-flash:high",
-    "openrouter/deepseek/deepseek-v4-flash-0731:high"
+    "openrouter/google/gemini-3.8-flash:high"
   ],
   "subagents": {
     "modelScope": {
@@ -20,11 +20,11 @@
       "allow": ["openrouter/*", "openai-codex/gpt-5*"]
     },
     "agentOverrides": {
-      "scout": { "model": "openrouter/deepseek/deepseek-v4-flash-0731" },
+      "scout": { "model": "openrouter/google/gemini-3.8-flash" },
       "delegate": { "model": "openrouter/z-ai/glm-5.3-flash" },
       "researcher": { "model": "openrouter/z-ai/glm-5.3-flash" },
       "worker": { "model": "openrouter/z-ai/glm-5.3-flash" },
-      "reviewer": { "model": "openrouter/deepseek/deepseek-v4-flash-0731" },
+      "reviewer": { "model": "openrouter/google/gemini-3.8-flash" },
       "oracle": { "model": "openai-codex/gpt-5.6-sol" }
     }
   },
