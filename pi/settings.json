@@ -9,16 +9,20 @@
   "enableInstallTelemetry": false,
   "enabledModels": [
     "openai-codex/gpt-5.6-sol:medium",
-    "openrouter/z-ai/glm-5.3-flash:high",
-    "openrouter/deepseek/deepseek-v4-flash-0731:high"
+    "openrouter/z-ai/glm-5.3-flash:high"
   ],
   "subagents": {
+    "modelScope": {
+      "enforce": true,
+      "strict": true,
+      "allow": ["openrouter/*", "openai-codex/gpt-5*"]
+    },
     "agentOverrides": {
-      "scout": { "model": "openrouter/deepseek/deepseek-v4-flash-0731" },
+      "scout": { "model": "openrouter/z-ai/glm-5.3-flash" },
       "delegate": { "model": "openrouter/z-ai/glm-5.3-flash" },
       "researcher": { "model": "openrouter/z-ai/glm-5.3-flash" },
-      "worker": { "model": "openai-codex/gpt-5.6-sol" },
-      "reviewer": { "model": "openai-codex/gpt-5.6-sol" },
+      "worker": { "model": "openrouter/z-ai/glm-5.3-flash" },
+      "reviewer": { "model": "openrouter/google/gemini-3.8-flash" },
       "oracle": { "model": "openai-codex/gpt-5.6-sol" }
     }
   },
