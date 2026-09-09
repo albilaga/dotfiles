@@ -54,9 +54,10 @@ pi-packages:
 	command -v herdr >/dev/null && herdr integration install pi >/dev/null || true
 
 pi: pi-packages
-	mkdir -p $(HOME)/.pi/agent/prompts
+	mkdir -p $(HOME)/.pi/agent/prompts $(HOME)/.pi/agent/extensions
 	cp $(DOTFILE_PATH)/pi/settings.json $(HOME)/.pi/agent/settings.json
 	ln -sf $(DOTFILE_PATH)/pi/keybindings.json $(HOME)/.pi/agent/keybindings.json
+	ln -sf $(DOTFILE_PATH)/pi/extensions/*.ts $(HOME)/.pi/agent/extensions/
 	rm -f $(HOME)/.pi/workflows/model-tiers.json
 	ln -sf $(DOTFILE_PATH)/pi/AGENTS.md $(HOME)/.pi/agent/AGENTS.md
 	ln -sf $(DOTFILE_PATH)/pi/prompts/*.md $(HOME)/.pi/agent/prompts/
