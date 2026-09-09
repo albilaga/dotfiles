@@ -18,8 +18,8 @@
       "scout": { "model": "openrouter/deepseek/deepseek-v4-flash-0731" },
       "delegate": { "model": "openrouter/z-ai/glm-5.3-flash" },
       "researcher": { "model": "openrouter/z-ai/glm-5.3-flash" },
-      "worker": { "model": "openai-codex/gpt-5.6-sol" },
-      "reviewer": { "model": "openai-codex/gpt-5.6-sol" },
+      "worker": { "model": "openrouter/z-ai/glm-5.3-flash" },
+      "reviewer": { "model": "openrouter/deepseek/deepseek-v4-flash-0731" },
       "oracle": { "model": "openai-codex/gpt-5.6-sol" }
     }
   },
