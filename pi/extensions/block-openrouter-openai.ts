@@ -15,21 +15,7 @@ export default function (pi: ExtensionAPI) {
 	pi.on("session_start", async (_event, ctx) => {
 		const kept = ctx.modelRegistry
 			.getAll()
-			.filter((m) => m.provider === "openrouter" && !BLOCKED.test(m.id))
-			.map((m) => ({
-				id: m.id,
-				name: m.name,
-				api: m.api,
-				baseUrl: m.baseUrl,
-				reasoning: m.reasoning,
-				thinkingLevelMap: m.thinkingLevelMap,
-				input: m.input,
-				cost: m.cost,
-				contextWindow: m.contextWindow,
-				maxTokens: m.maxTokens,
-				samplingParams: m.samplingParams,
-				compat: m.compat,
-			}));
+			.filter((m) => m.provider === "openrouter" && !BLOCKED.test(m.id));
 		if (kept.length === 0) return;
 		pi.registerProvider("openrouter", { baseUrl: kept[0].baseUrl, models: kept });
 
