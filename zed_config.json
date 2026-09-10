@@ -7,21 +7,6 @@
   "git_panel": {
     "dock": "left"
   },
-  "language_models": {
-    "openai": {
-      "available_models": [
-        {
-          "name": "deepseek-coder",
-          "max_tokens": 128000
-        },
-        {
-          "name": "deepseek-chat",
-          "max_tokens": 128000
-        }
-      ],
-      "api_url": "https://api.deepseek.com/v1"
-    }
-  },
   "agent": {
     "dock": "right",
     "tool_permissions": {

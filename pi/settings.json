@@ -20,9 +20,9 @@
     "agentOverrides": {
       "scout": { "model": "openrouter/z-ai/glm-5.3-flash" },
       "delegate": { "model": "openrouter/z-ai/glm-5.3-flash" },
-      "researcher": { "model": "openrouter/deepseek/deepseek-v4.1-flash" },
+      "researcher": { "model": "openrouter/deepz-ai/glm-5.3-flash" },
       "worker": { "model": "openrouter/z-ai/glm-5.3-flash" },
-      "reviewer": { "model": "openrouter/deepseek/deepseek-v4.1-flash" },
+      "reviewer": { "model": "openrouter/z-ai/glm-5.3-flash" },
       "oracle": { "model": "openai-codex/gpt-5.6-sol" }
     }
   },

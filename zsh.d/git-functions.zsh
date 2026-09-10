@@ -224,10 +224,9 @@ git_auto_cleanup() {
 # Git WORKTREE management (gw* namespace)
 # ----------------------------------------------------------------------------
 # Convention: worktrees are SIBLINGS of the main repo under
-#   ${GIT_WORKTREE_DIR:-<repo-parent>/<repo-name>.worktrees}/<sanitized-leaf>
-# Branch refs keep their slashes (feature/foo); only the on-disk leaf is
-# sanitized (/ -> -) so each worktree is one flat path segment (no nested dirs,
-# no collisions). The base dir anchors on the MAIN worktree, so everything is
+#   ${GIT_WORKTREE_DIR:-<repo-parent>/<repo-name>.worktrees}/<branch-leaf>
+# Branch refs keep their slashes (feature/foo); the on-disk worktree uses only
+# the last segment (foo). The base dir anchors on the MAIN worktree, so this is
 # correct even when invoked from INSIDE a linked worktree.
 #
 # Commands:
@@ -270,9 +269,9 @@ _gw_main_worktree() {
         | awk '/^worktree /{print substr($0, 10); exit}'
 }
 
-# Sanitize a branch name into a single safe path leaf (slashes/spaces -> dash).
+# Use the branch's last segment as its safe path leaf (spaces -> dash).
 _gw_sanitize_leaf() {
-    local leaf="${1//\//-}"
+    local leaf="${1##*/}"
     echo "${leaf// /-}"
 }
 
