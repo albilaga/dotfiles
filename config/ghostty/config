@@ -30,7 +30,6 @@ keybind = super+8=unbind
 keybind = super+digit_8=unbind
 keybind = super+9=unbind
 keybind = super+digit_9=unbind
-keybind = super+t=unbind
 keybind = super+n=unbind
 keybind = super+shift+n=unbind
 keybind = super+d=unbind
