@@ -79,6 +79,6 @@
     path =~/Documents/personal/.gitconfig
 
 [includeIf "gitdir:~/Documents/pans/"]
-    path =~/Documents/pans/.gitconfig
+    path =~/Documents/panin-sekuritas/.gitconfig
 [tag]
 	gpgSign = true
