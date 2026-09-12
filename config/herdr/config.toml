@@ -11,12 +11,12 @@ dark_name = "catppuccin-mocha"
 light_name = "catppuccin-latte"
 
 [keys]
-switch_tab = "cmd+1..9"
-switch_workspace = "cmd+shift+1..9"
+switch_tab = "prefix+1..9"
+switch_workspace = "prefix+shift+1..9"
 new_tab = "prefix+t"
-new_workspace = "cmd+n"
-new_worktree = "cmd+shift+n"
-split_vertical = "cmd+d"
+new_workspace = "prefix+n"
+new_worktree = "prefix+shift+n"
+split_vertical = "prefix+d"
 goto = "cmd+/"
 
 # Pickers for the gwa-managed worktrees (keyboard counterparts to gws/gwrm).
