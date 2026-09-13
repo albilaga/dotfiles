@@ -56,7 +56,7 @@ pi-packages:
 	command -v herdr >/dev/null && herdr integration install pi >/dev/null || true
 
 pi: pi-packages
-	mkdir -p $(HOME)/.pi/agent/prompts $(HOME)/.pi/agent/extensions
+	mkdir -p $(HOME)/.pi/agent/prompts $(HOME)/.pi/agent/extensions $(HOME)/.pi/agent/skills
 	test -f $(DOTFILE_PATH)/pi/profiles/$(PI_PROFILE).json
 	jq -s '.[0] * .[1] * {dotfilesProfile: "$(PI_PROFILE)"}' \
 		$(DOTFILE_PATH)/pi/settings.json $(DOTFILE_PATH)/pi/profiles/$(PI_PROFILE).json \
@@ -67,6 +67,9 @@ pi: pi-packages
 	rm -f $(HOME)/.pi/workflows/model-tiers.json
 	ln -sf $(DOTFILE_PATH)/pi/AGENTS.md $(HOME)/.pi/agent/AGENTS.md
 	ln -sf $(DOTFILE_PATH)/pi/prompts/*.md $(HOME)/.pi/agent/prompts/
+	for dir in $(DOTFILE_PATH)/pi/skills/*; do \
+		ln -sfn $$dir $(HOME)/.pi/agent/skills/$$(basename $$dir); \
+	done
 
 all: git zsh config zed herdr pi
 .PHONY: all git zsh config zed herdr pi pi-packages
