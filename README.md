@@ -56,6 +56,15 @@ make zed      # Install Zed editor settings only
 make pi       # Install pi coding agent configs, packages, and settings
 ```
 
+Pi defaults to the existing laptop profile, or `personal` on first install. Switch it with:
+
+```bash
+make pi PROFILE=work      # Codex + OpenRouter
+make pi PROFILE=personal  # Codex + Command Code
+```
+
+The selected profile is stored as `dotfilesProfile` in `~/.pi/agent/settings.json`.
+
 ### 4. Set up GPG signing (macOS)
 
 The git configuration enables GPG signing for commits and tags by default. To ensure proper GPG functionality on macOS:

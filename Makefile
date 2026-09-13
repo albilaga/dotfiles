@@ -3,6 +3,7 @@ UNAME := $(shell uname)
 # worktrees are throwaway, symlinks here must survive their removal.
 GIT_COMMON_DIR := $(shell git rev-parse --path-format=absolute --git-common-dir 2>/dev/null || pwd)/.git
 DOTFILE_PATH := $(patsubst %/.git,%,$(patsubst %/,%,$(dir $(GIT_COMMON_DIR))))
+PI_PROFILE = $(or $(PROFILE),$(shell jq -r '.dotfilesProfile // empty' $(HOME)/.pi/agent/settings.json 2>/dev/null),personal)
 
 $(HOME)/.%: %
 	ln -sf $(DOTFILE_PATH)/$^ $@
@@ -43,7 +44,8 @@ pi-packages:
 		npm:pi-mcp-adapter \
 		npm:pi-caveman \
 		npm:pi-web-access \
-		npm:pi-catppuccin; do \
+		npm:pi-catppuccin \
+		npm:pi-commandcode-provider; do \
 		pi list | grep -Fq "  $$package" || pi install "$$package"; \
 	done
 	gh extension list | grep -q '^gh stack[[:space:]]' || gh extension install github/gh-stack
@@ -55,7 +57,11 @@ pi-packages:
 
 pi: pi-packages
 	mkdir -p $(HOME)/.pi/agent/prompts $(HOME)/.pi/agent/extensions
-	cp $(DOTFILE_PATH)/pi/settings.json $(HOME)/.pi/agent/settings.json
+	test -f $(DOTFILE_PATH)/pi/profiles/$(PI_PROFILE).json
+	jq -s '.[0] * .[1] * {dotfilesProfile: "$(PI_PROFILE)"}' \
+		$(DOTFILE_PATH)/pi/settings.json $(DOTFILE_PATH)/pi/profiles/$(PI_PROFILE).json \
+		> $(HOME)/.pi/agent/settings.json.tmp
+	mv $(HOME)/.pi/agent/settings.json.tmp $(HOME)/.pi/agent/settings.json
 	ln -sf $(DOTFILE_PATH)/pi/keybindings.json $(HOME)/.pi/agent/keybindings.json
 	ln -sf $(DOTFILE_PATH)/pi/extensions/*.ts $(HOME)/.pi/agent/extensions/
 	rm -f $(HOME)/.pi/workflows/model-tiers.json
