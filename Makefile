@@ -45,7 +45,7 @@ pi-packages:
 		npm:pi-caveman \
 		npm:pi-web-access \
 		npm:pi-catppuccin \
-		npm:pi-commandcode-provider; do \
+		npm:pi-router; do \
 		pi list | grep -Fq "  $$package" || pi install "$$package"; \
 	done
 	gh extension list | grep -q '^gh stack[[:space:]]' || gh extension install github/gh-stack

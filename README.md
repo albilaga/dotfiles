@@ -60,7 +60,7 @@ Pi defaults to the existing laptop profile, or `personal` on first install. Swit
 
 ```bash
 make pi PROFILE=work      # Codex + OpenRouter
-make pi PROFILE=personal  # Codex + Command Code
+make pi PROFILE=personal  # Codex + Z.AI
 ```
 
 The selected profile is stored as `dotfilesProfile` in `~/.pi/agent/settings.json`.

@@ -1,20 +1,20 @@
 {
   "enabledModels": [
     "openai-codex/gpt-5.6-sol:medium",
-    "commandcode/z-ai/glm-5.3-flash:high"
+    "zai/glm-5.3-flash:high"
   ],
   "subagents": {
     "modelScope": {
       "enforce": true,
       "strict": true,
-      "allow": ["commandcode/*", "openai-codex/gpt-5*"]
+      "allow": ["zai/*", "openai-codex/gpt-5*"]
     },
     "agentOverrides": {
-      "scout": { "model": "commandcode/z-ai/glm-5.3-flash" },
-      "delegate": { "model": "commandcode/z-ai/glm-5.3-flash" },
-      "researcher": { "model": "commandcode/z-ai/glm-5.3-flash" },
-      "worker": { "model": "commandcode/z-ai/glm-5.3-flash" },
-      "reviewer": { "model": "commandcode/z-ai/glm-5.3-flash" },
+      "scout": { "model": "zai/glm-5.3-flash" },
+      "delegate": { "model": "zai/glm-5.3-flash" },
+      "researcher": { "model": "zai/glm-5.3-flash" },
+      "worker": { "model": "zai/glm-5.3-flash" },
+      "reviewer": { "model": "zai/glm-5.3-flash" },
       "oracle": { "model": "openai-codex/gpt-5.6-sol" }
     }
   }
