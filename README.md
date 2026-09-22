@@ -52,8 +52,9 @@ Or install specific components:
 make git      # Install git configs only
 make zsh      # Install zsh configs only
 make config   # Install application configs only
-make zed      # Install Zed editor settings only
-make pi       # Install pi coding agent configs, packages, and settings
+make zed        # Install Zed editor settings only
+make pi         # Install pi coding agent configs, packages, and settings
+make bb-plugins # Install local BB plugins
 ```
 
 Pi defaults to the existing laptop profile, or `personal` on first install. Switch it with:
