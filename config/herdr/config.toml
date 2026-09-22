@@ -1,3 +1,4 @@
+onboarding = false
 # Herdr config — tracked in dotfiles, symlinked by `make config`.
 # Reference: https://herdr.dev/docs/configuration/
 
@@ -10,6 +11,7 @@ auto_switch = true
 dark_name = "catppuccin-mocha"
 light_name = "catppuccin-latte"
 
+name = "catppuccin-latte"
 [keys]
 switch_tab = "prefix+1..9"
 switch_workspace = "prefix+shift+1..9"
