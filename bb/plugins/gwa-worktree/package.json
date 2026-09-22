@@ -19,6 +19,7 @@
   },
   "scripts": {
     "build": "bb plugin build",
+    "test": "bash smoke-test.sh",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
