@@ -1,6 +1,4 @@
 {
-  "defaultProvider": "openai-codex",
-  "defaultModel": "gpt-5.6-sol",
   "defaultThinkingLevel": "medium",
   "theme": "catppuccin-latte/catppuccin-frappe",
   "collapseChangelog": true,
