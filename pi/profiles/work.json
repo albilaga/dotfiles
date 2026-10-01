@@ -5,7 +5,7 @@
       "delegate": { "model": "openrouter/z-ai/glm-5.3-flash" },
       "researcher": { "model": "openrouter/z-ai/glm-5.3-flash" },
       "worker": { "model": "openrouter/z-ai/glm-5.3-flash" },
-      "reviewer": { "model": "openai-codex/gpt-6-sol" },
+      "reviewer": { "model": "openai-codex/gpt-6.1-sol" },
       "oracle": { "model": "openai-codex/gpt-6-astra" }
     }
   }
