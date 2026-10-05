@@ -4,6 +4,7 @@
       "scout": { "model": "zai/glm-5.3-flash" },
       "delegate": { "model": "zai/glm-5.3-flash" },
       "researcher": { "model": "zai/glm-5.3-flash" },
+      "evidence-auditor": {"model": "openai/gpt-6.1-sol"},
       "worker": { "model": "zai/glm-5.3-flash" },
       "reviewer": { "model": "openai/gpt-6.1-sol" },
       "oracle": { "model": "openai/gpt-6-astra" }

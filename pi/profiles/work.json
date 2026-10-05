@@ -3,6 +3,7 @@
     "agentOverrides": {
       "scout": { "model": "openrouter/z-ai/glm-5.3-flash" },
       "delegate": { "model": "openrouter/z-ai/glm-5.3-flash" },
+      "evidence-auditor": {"model": "openai/gpt-6.1-sol"},
       "researcher": { "model": "openrouter/z-ai/glm-5.3-flash" },
       "worker": { "model": "openrouter/z-ai/glm-5.3-flash" },
       "reviewer": { "model": "openai/gpt-6.1-sol" },
