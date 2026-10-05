@@ -1,19 +1,15 @@
 {
-  "defaultThinkingLevel": "medium",
-  "theme": "catppuccin-latte/catppuccin-frappe",
+  "theme": "system",
+  "defaultTools": ["+codemode"],
   "collapseChangelog": true,
   "hideThinkingBlock": true,
   "quietStartup": true,
   "enableInstallTelemetry": false,
-  "terminal": {
-    "showImages": true
-  },
   "packages": [
     "npm:@dietrichgebert/ponytail",
     "npm:@pi-archimedes/image-paste",
     "npm:pi-subagents",
     "npm:pi-caveman",
-    "npm:pi-web-access",
-    "npm:pi-catppuccin"
+    "npm:pi-web-access"
   ]
 }
