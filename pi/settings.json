@@ -12,10 +12,8 @@
     "npm:@dietrichgebert/ponytail",
     "npm:@pi-archimedes/image-paste",
     "npm:pi-subagents",
-    "npm:pi-mcp-adapter",
     "npm:pi-caveman",
     "npm:pi-web-access",
-    "npm:pi-catppuccin",
-    "npm:pi-router"
+    "npm:pi-catppuccin"
   ]
 }

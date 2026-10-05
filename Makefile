@@ -37,15 +37,8 @@ herdr:
 
 pi-packages:
 	npm install -g --ignore-scripts @earendil-works/pi-coding-agent
-	for package in \
-		npm:@dietrichgebert/ponytail \
-		npm:@pi-archimedes/image-paste \
-		npm:pi-subagents \
-		npm:pi-mcp-adapter \
-		npm:pi-caveman \
-		npm:pi-web-access \
-		npm:pi-catppuccin \
-		npm:pi-router; do \
+	packages=$$(jq -r '.packages[]' "$(DOTFILE_PATH)/pi/settings.json") || exit $$?; \
+	for package in $$packages; do \
 		pi list | grep -Fq "  $$package" || pi install "$$package"; \
 	done
 	gh extension list | grep -q '^gh stack[[:space:]]' || gh extension install github/gh-stack
