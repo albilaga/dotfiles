@@ -48,10 +48,6 @@ pi-packages:
 	# by herdr, not tracked in dotfiles - recreated here).
 	command -v herdr >/dev/null && herdr integration install pi >/dev/null || true
 
-bb-plugins:
-	npm --prefix $(DOTFILE_PATH)/bb/plugins/gwa-worktree install
-	bb plugin install $(DOTFILE_PATH)/bb/plugins/gwa-worktree --yes
-
 pi: pi-packages
 	mkdir -p $(HOME)/.pi/agent/prompts $(HOME)/.pi/agent/extensions $(HOME)/.pi/agent/skills
 	test -f $(DOTFILE_PATH)/pi/profiles/$(PI_PROFILE).json
@@ -68,5 +64,5 @@ pi: pi-packages
 		ln -sfn $$dir $(HOME)/.pi/agent/skills/$$(basename $$dir); \
 	done
 
-all: git zsh config zed herdr pi bb-plugins
-.PHONY: all git zsh config zed herdr pi pi-packages bb-plugins
+all: git zsh config zed herdr pi
+.PHONY: all git zsh config zed herdr pi pi-packages

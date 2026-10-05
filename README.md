@@ -54,7 +54,6 @@ make zsh      # Install zsh configs only
 make config   # Install application configs only
 make zed        # Install Zed editor settings only
 make pi         # Install pi coding agent configs, packages, and settings
-make bb-plugins # Install local BB plugins
 ```
 
 Pi defaults to the existing laptop profile, or `personal` on first install. Switch it with:
@@ -175,11 +174,9 @@ Any `.sh` files in this directory will be automatically sourced by zsh but won't
 │   ├── env.Darwin.sh
 │   ├── git-functions.zsh
 │   └── video-images-functions.zsh
-├── config/                  # Application configs
-│   ├── ghostty/
-│   └── lsd/
-└── opencode/                # Claude Code agent prompts
-    └── agent/
+└── config/                  # Application configs
+    ├── ghostty/
+    └── lsd/
 ```
 
 ## Key Features
