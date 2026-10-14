@@ -173,6 +173,9 @@ function update {
   elif [[ "$OSTYPE" == linux* ]]; then
     sudo apt update && sudo apt upgrade -y && sudo apt autoremove -y
   fi
+  if command -v herdr >/dev/null 2>&1; then
+    herdr plugin update --yes
+  fi
 }
 alias cleanup="dotnet nuget locals all -c && brew autoremove && brew cleanup"
 
@@ -327,9 +330,12 @@ if type atuin &> /dev/null; then
   eval "$(atuin init zsh)"
 fi
 
-for hook in ${HOME}/.config/herdr/plugins/github/herdr-automatic-rename-*/shell/hook.zsh(N); do
-  source $hook; break
-done
+# Updates retain old installs; load the registered plugin, not the first glob match.
+if [[ "${HERDR_ENV:-}" == 1 ]] && command -v herdr >/dev/null 2>&1; then
+  herdr_rename_root=$(herdr plugin list --json | jq -r '.result.plugins[] | select(.plugin_id == "herdr-automatic-rename") | .source.managed_path // empty')
+  [[ -n "$herdr_rename_root" && -r "$herdr_rename_root/shell/hook.zsh" ]] && source "$herdr_rename_root/shell/hook.zsh"
+  unset herdr_rename_root
+fi
 
 # jenv
 eval "$(jenv init -)"

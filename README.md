@@ -53,6 +53,7 @@ make git      # Install git configs only
 make zsh      # Install zsh configs only
 make config   # Install application configs only
 make zed        # Install Zed editor settings only
+make herdr      # Install Herdr plugins through its native plugin manager
 make pi         # Install pi coding agent configs, packages, and settings
 ```
 
@@ -216,7 +217,7 @@ Common shortcuts defined in `gitconfig` and `zsh.d/git-functions.zsh`:
 
 - `ez` - Edit zshrc
 - `sz` - Source zshrc
-- `update` - Update all Homebrew packages
+- `update` - Update system packages, Pi extensions (macOS), and all GitHub-managed Herdr plugins
 - `cleanup` - Clean package manager caches
 
 ### Tools Integration
