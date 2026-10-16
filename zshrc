@@ -177,7 +177,7 @@ function update {
     herdr plugin update --yes
   fi
 }
-alias cleanup="dotnet nuget locals all -c && brew autoremove && brew cleanup && docker container prune && docker volume prune --all"
+alias cleanup="dotnet nuget locals all -c && brew autoremove && brew cleanup && docker container prune && docker volume prune --all && docker image prune && docker builder prune"
 
 ##########
 # FUNCTIONS

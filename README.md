@@ -218,7 +218,7 @@ Common shortcuts defined in `gitconfig` and `zsh.d/git-functions.zsh`:
 - `ez` - Edit zshrc
 - `sz` - Source zshrc
 - `update` - Update system packages, Pi extensions (macOS), and all GitHub-managed Herdr plugins
-- `cleanup` - Clean package manager caches, then prompt to remove stopped Docker containers and all unused volumes (including named volumes; their data is deleted)
+- `cleanup` - Clean package manager caches, then prompt to remove stopped Docker containers, all unused volumes (including named volumes; their data is deleted), dangling images, and build cache
 
 ### Tools Integration
 
