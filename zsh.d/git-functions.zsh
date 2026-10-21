@@ -1280,12 +1280,10 @@ EOF
             continue
         fi
 
-        # The local parent ref can lag origin -- _gw_ff_branch gives up when the
-        # parent's worktree is dirty or has diverged. Integrating a stale parent
-        # succeeds locally and then conflicts on the PR, so integrate
-        # origin/<parent> whenever the local ref does not already contain it.
+        # A rebased local parent can diverge from origin without being stale.
         target="$parent"
         if git rev-parse --verify --quiet "refs/remotes/origin/$parent" >/dev/null \
+           && git merge-base --is-ancestor "$parent" "origin/$parent" 2>/dev/null \
            && ! git merge-base --is-ancestor "origin/$parent" "$parent" 2>/dev/null; then
             _gw_warning "  local '$parent' is behind origin/$parent - integrating origin/$parent instead"
             target="origin/$parent"
