@@ -58,3 +58,70 @@ else
     exit 1
 fi
 print 'gwsync rebased parent: ok'
+
+# A resolved parent conflict must not be replayed by either child on restart.
+git -C "$tmp/repo" worktree add -b grandchild "$tmp/grandchild" child >/dev/null 2>&1
+git -C "$tmp/repo" config git-town-branch.grandchild.parent child
+print grandchild > "$tmp/grandchild/grandchild.txt"
+git -C "$tmp/grandchild" add grandchild.txt
+git -C "$tmp/grandchild" commit -m grandchild >/dev/null
+git -C "$tmp/repo" switch main >/dev/null 2>&1
+print upstream > "$tmp/repo/parent.txt"
+git -C "$tmp/repo" add parent.txt
+git -C "$tmp/repo" commit -m 'conflicting main change' >/dev/null
+git -C "$tmp/repo" push origin main >/dev/null 2>&1
+git -C "$tmp/repo" switch parent >/dev/null 2>&1
+
+if (cd "$tmp/grandchild" && GIT_WORKTREE_STACK=plain git_worktree_sync --no-push); then
+    print -u2 'expected parent conflict'
+    exit 1
+fi
+child_base=$(git -C "$tmp/repo" rev-parse refs/gwsync/bases/child)
+grandchild_base=$(git -C "$tmp/repo" rev-parse refs/gwsync/bases/grandchild)
+# Retrying before resolution must not consume saved child boundaries.
+if (cd "$tmp/grandchild" && GIT_WORKTREE_STACK=plain git_worktree_sync --no-push); then
+    print -u2 'expected paused rebase rejection'
+    exit 1
+fi
+[[ "$(git -C "$tmp/repo" rev-parse refs/gwsync/bases/child)" == "$child_base" ]]
+[[ "$(git -C "$tmp/repo" rev-parse refs/gwsync/bases/grandchild)" == "$grandchild_base" ]]
+print resolved-parent > "$tmp/repo/parent.txt"
+git -C "$tmp/repo" add parent.txt
+GIT_EDITOR=true git -C "$tmp/repo" rebase --continue >/dev/null
+
+# New shell proves recovery does not depend on in-memory snapshots.
+functions_file="${0:A:h}/git-functions.zsh"
+(cd "$tmp/grandchild" && GIT_WORKTREE_STACK=plain zsh -c \
+    'source "$1"; git_worktree_sync --no-push' zsh "$functions_file")
+git -C "$tmp/repo" merge-base --is-ancestor main parent
+git -C "$tmp/repo" merge-base --is-ancestor parent child
+git -C "$tmp/repo" merge-base --is-ancestor child grandchild
+[[ "$(git -C "$tmp/repo" rev-list --count parent..child)" == 1 ]]
+[[ "$(git -C "$tmp/repo" rev-list --count child..grandchild)" == 1 ]]
+[[ "$(git -C "$tmp/repo" show grandchild:parent.txt)" == resolved-parent ]]
+[[ "$(git -C "$tmp/repo" show grandchild:child.txt)" == child ]]
+[[ "$(git -C "$tmp/repo" show grandchild:grandchild.txt)" == grandchild ]]
+[[ -z "$(git -C "$tmp/repo" for-each-ref --format='%(refname)' refs/gwsync/bases/)" ]]
+print 'gwsync three-layer conflict recovery: ok'
+
+# Continuing a child's own conflict must not replay its newly integrated parent.
+print upstream-child > "$tmp/repo/child.txt"
+git -C "$tmp/repo" add child.txt
+git -C "$tmp/repo" commit -m 'parent adds child file' >/dev/null
+if (cd "$tmp/grandchild" && GIT_WORKTREE_STACK=plain git_worktree_sync --no-push); then
+    print -u2 'expected child conflict'
+    exit 1
+fi
+print resolved-child > "$tmp/child/child.txt"
+git -C "$tmp/child" add child.txt
+GIT_EDITOR=true git -C "$tmp/child" rebase --continue >/dev/null
+child_tip=$(git -C "$tmp/repo" rev-parse child)
+(cd "$tmp/grandchild" && GIT_WORKTREE_STACK=plain zsh -c \
+    'source "$1"; git_worktree_sync --no-push' zsh "$functions_file")
+[[ "$(git -C "$tmp/repo" rev-parse child)" == "$child_tip" ]]
+git -C "$tmp/repo" merge-base --is-ancestor child grandchild
+[[ "$(git -C "$tmp/repo" rev-list --count parent..child)" == 1 ]]
+[[ "$(git -C "$tmp/repo" rev-list --count child..grandchild)" == 1 ]]
+[[ "$(git -C "$tmp/repo" show grandchild:child.txt)" == resolved-child ]]
+[[ -z "$(git -C "$tmp/repo" for-each-ref --format='%(refname)' refs/gwsync/bases/)" ]]
+print 'gwsync manually continued child: ok'

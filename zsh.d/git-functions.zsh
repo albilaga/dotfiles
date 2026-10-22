@@ -1160,7 +1160,39 @@ EOF
         done
     done
 
-    local failed=0 synced=0 skipped=0 parent wt target rebase_from
+    # Keep old parent tips across conflicts: later children still contain the
+    # pre-rebase history, even when sync resumes in a new shell.
+    local base_ref old_parent old_tip rebase_dir wt
+    local -a base_chain
+    if [[ "$strategy" == rebase && "$backend" != town ]] && (( ! dry )); then
+        # Rebasing detaches HEAD, so branch-to-worktree lookup cannot find its owner.
+        _gw_parse_worktrees
+        for wt in "${_GW_WT_PATH[@]}"; do
+            for rebase_dir in rebase-merge rebase-apply; do
+                if [[ -d "$(git -C "$wt" rev-parse --path-format=absolute --git-path "$rebase_dir")" ]]; then
+                    _gw_error "Rebase in progress in $wt; continue or abort it before re-running gwsync."
+                    return 1
+                fi
+            done
+        done
+        for b in "${queue[@]}"; do
+            base_chain=( ${(f)"$(_gw_branch_chain "$b" "$backend" "$default_branch")"} )
+            old_parent="${base_chain[-2]}"
+            [[ -z "$old_parent" || "$old_parent" == "$default_branch" ]] && continue
+            base_ref="refs/gwsync/bases/$b"
+            if ! git rev-parse --verify --quiet "$base_ref" >/dev/null; then
+                old_tip="$(git rev-parse --verify "$old_parent^{commit}" 2>/dev/null)" \
+                    || old_tip="$(git rev-parse --verify "origin/$old_parent^{commit}" 2>/dev/null)" \
+                    || continue
+                if ! git update-ref "$base_ref" "$old_tip"; then
+                    _gw_error "Could not save old parent '$old_parent' for '$b'; stopping before rebase."
+                    return 1
+                fi
+            fi
+        done
+    fi
+
+    local failed=0 synced=0 skipped=0 parent target rebase_from
     for b in "${queue[@]}"; do
         rebase_from=""
         wt="$(_gw_worktree_of_branch "$b")"
@@ -1296,13 +1328,26 @@ EOF
         elif [[ -n "$rebase_from" ]]; then
             git -C "$wt" rebase --onto "$target" "$rebase_from" && ok=1
         else
-            git -C "$wt" rebase "$target" && ok=1
+            base_ref="refs/gwsync/bases/$b"
+            if git rev-parse --verify --quiet "$base_ref" >/dev/null; then
+                # A manually continued rebase may have already integrated target.
+                if git merge-base --is-ancestor "$target" "$b"; then
+                    ok=1
+                else
+                    git -C "$wt" rebase --onto "$target" "$base_ref" && ok=1
+                fi
+            else
+                git -C "$wt" rebase "$target" && ok=1
+            fi
         fi
         if (( ! ok )); then
             _gw_error "  $strategy of '$target' into '$b' hit a conflict."
             _gw_error "  Resolve it in: $wt   (then 'git -C $wt $strategy --continue' and re-run gwsync)"
             failed=1
             break
+        fi
+        if [[ "$strategy" == rebase ]]; then
+            git update-ref -d "refs/gwsync/bases/$b" || return 1
         fi
         _gw_success "  $b is up to date with $target"
         (( synced++ ))
