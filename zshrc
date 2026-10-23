@@ -168,6 +168,7 @@ function update {
     brew update && brew upgrade && brew autoremove
     npm update -g && pi update --extensions
     android update
+    android skills update --all
     sdkmanager --update
     sudo mas upgrade
     xcodes install --latest --experimental-unxip
