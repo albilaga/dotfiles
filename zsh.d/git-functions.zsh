@@ -105,17 +105,22 @@ _gw_is_branch_merged() {
     _gw_is_merged_git "$branch" "$default_branch"
 }
 
-# Merged INTO $2 specifically (not just any merged PR): gh PR base must equal
-# $2; falls back to git ancestry for non-GitHub remotes / gh-less setups.
+# Follow merged PR bases: stacked PRs can land in a parent before reaching $2.
+# Bound the walk so stale or cyclic PR metadata cannot loop forever.
 _gw_is_merged_into() {
     local branch="$1" base="$2" remote_url="$3"
     if [[ "$remote_url" == *"github.com"* ]] && _gw_check_gh_cli quiet; then
-        local base_ref
-        base_ref=$(gh pr list --repo "$(_gw_github_repo_path "$remote_url")" \
-            --head "$branch" --state merged --json baseRefName \
-            --jq '.[0].baseRefName' 2>/dev/null)
-        [[ "$base_ref" == "$base" ]] && return 0
-        return 1
+        local base_ref current="$branch" depth
+        for (( depth = 0; depth < 32; depth++ )); do
+            base_ref=$(gh pr list --repo "$(_gw_github_repo_path "$remote_url")" \
+                --head "$current" --state merged --json baseRefName \
+                --jq '.[0].baseRefName' 2>/dev/null) || break
+            [[ "$base_ref" == "$base" ]] && return 0
+            [[ -z "$base_ref" || "$base_ref" == null || "$base_ref" == "$current" ]] && break
+            current="$base_ref"
+        done
+        git merge-base --is-ancestor "$branch" "origin/$base" 2>/dev/null
+        return $?
     fi
     _gw_is_merged_git "$branch" "$base"
 }
@@ -1192,6 +1197,7 @@ EOF
         done
     fi
 
+    local -a active_queue
     local failed=0 synced=0 skipped=0 parent target rebase_from
     for b in "${queue[@]}"; do
         rebase_from=""
@@ -1203,6 +1209,14 @@ EOF
 
         echo >&2
         _gw_info "${_GW_CYAN}${b}${_GW_NC} <- ${_GW_CYAN}${parent}${_GW_NC}"
+
+        # Merged branches need no integration, even when cleanup removed their worktrees.
+        if _gw_is_merged_into "$b" "$default_branch" "$remote_url" \
+           || { [[ "$parent" != "$default_branch" ]] && _gw_is_merged_into "$b" "$parent" "$remote_url"; }; then
+            _gw_info "  '$b' is already merged up the chain - skipping integration"
+            continue
+        fi
+        active_queue+=("$b")
 
         if [[ -z "$wt" ]]; then
             _gw_info "  no worktree for '$b'; fast-forwarding from origin only"
@@ -1232,7 +1246,7 @@ EOF
         # dirty) must keep its old lineage, or a later sync would plain-rebase
         # onto the trunk and replay the merged parent's commits as duplicates.
         if [[ "$parent" != "$default_branch" ]]; then
-            local pi=${chain[(Ie)$parent]} up merged_into=""
+            local pi=${chain[(Ie)$parent]} up=0 merged_into="" state="" boundary="" tmp=""
             for (( up = pi - 1; up >= 1; up-- )); do
                 if [[ "${chain[$up]}" == "$default_branch" ]]; then
                     # Trunk: gh PR check first (catches squash-merges that
@@ -1240,21 +1254,47 @@ EOF
                     if _gw_is_merged_into "$parent" "$default_branch" "$remote_url"; then
                         merged_into="$default_branch"; break
                     fi
-                elif git merge-base --is-ancestor "$parent" "${chain[$up]}" 2>/dev/null; then
+                elif ! _gw_is_merged_into "${chain[$up]}" "$default_branch" "$remote_url" \
+                     && _gw_is_merged_into "$parent" "${chain[$up]}" "$remote_url"; then
                     merged_into="${chain[$up]}"; break
                 fi
             done
-            # The merged parent's ref may already be gone (branch deleted after
-            # its PR merged). One existing only on origin is fine -- rebase from
-            # origin/<parent> -- but one existing nowhere would fatal the rebase,
-            # so leave the lineage untouched and skip the re-parent.
+            # Recover deleted parent boundaries before changing lineage; without
+            # a verified boundary, rebasing could replay already merged commits.
             if [[ -n "$merged_into" ]] \
                && ! git rev-parse --verify --quiet "$parent" >/dev/null 2>&1; then
                 if git rev-parse --verify --quiet "origin/$parent" >/dev/null 2>&1; then
                     rebase_from="origin/$parent"
                 else
-                    _gw_warning "  merged parent '$parent' no longer exists; keeping '$b' stacked on '$parent'"
-                    merged_into=""
+                    # Deleted parent refs can still have a saved rebase boundary.
+                    rebase_from="refs/gwsync/bases/$b"
+                    if ! git rev-parse --verify --quiet "$rebase_from^{commit}" >/dev/null; then
+                        state="$(_gw_ghstack_state)" || state=""
+                        if [[ -n "$state" ]]; then
+                            boundary=$(jq -r --arg b "$b" '.stacks[].branches[] | select(.branch == $b) | .base // empty' "$state" 2>/dev/null)
+                        fi
+                        if [[ -z "$boundary" ]] \
+                           || ! git merge-base --is-ancestor "$boundary" "$b" 2>/dev/null; then
+                            # A previous rebase may have replaced the saved stack base.
+                            local tip="" action=""
+                            boundary=""
+                            while IFS=$'\t' read -r tip action; do
+                                [[ "$action" == "rebase (start): checkout $parent" \
+                                   || "$action" == "rebase (start): checkout origin/$parent" ]] || continue
+                                git merge-base --is-ancestor "$tip" "$b" 2>/dev/null || continue
+                                boundary="$tip"
+                                break
+                            done < <(git -C "$wt" reflog show HEAD --format='%H%x09%gs' 2>/dev/null)
+                        fi
+                        if [[ -n "$boundary" ]] \
+                           && git merge-base --is-ancestor "$boundary" "$b" 2>/dev/null; then
+                            rebase_from="$boundary"
+                        else
+                            _gw_warning "  merged parent '$parent' has no recoverable boundary - NOT synced"
+                            (( skipped++ ))
+                            continue
+                        fi
+                    fi
                 fi
             fi
             if [[ -n "$merged_into" ]]; then
@@ -1262,20 +1302,18 @@ EOF
                 [[ -z "$rebase_from" ]] && rebase_from="$parent"
                 parent="$merged_into"
                 if (( ! dry )); then
+                    if [[ "$strategy" == rebase && "$backend" != town ]]; then
+                        git update-ref "refs/gwsync/bases/$b" "$(git rev-parse "$rebase_from^{commit}")" || return 1
+                    fi
                     git config "git-town-branch.$b.parent" "$parent"
-                    # Also fix the gh-stack state file (source of _gw_branch_chain
-                    # on the ghstack backend): drop the merged branch from every
-                    # stack, dropping stacks left with no branches. ponytail: we
-                    # can only rewrite the copy visible from THIS worktree's
-                    # $GIT_DIR; sibling worktrees stay stale until their own
-                    # gwsync re-detects the merged parent.
+                    # Remove the collapsed ancestors, not the new parent.
+                    # Only this worktree's visible state is updated; siblings repair on sync.
                     if [[ "$backend" == ghstack ]]; then
-                        local state tmp
                         state="$(_gw_ghstack_state)" || state=""
                         if [[ -n "$state" ]] && command -v jq >/dev/null 2>&1; then
                             tmp=$(mktemp)
-                            if jq --arg gone "$parent" \
-                                '.stacks |= map((.branches |= map(select(.branch != $gone))) | select((.branches | length) > 0))' \
+                            if jq --argjson gone "$(printf '%s\n' "${chain[@]:$up:$(( pi - up ))}" | jq -Rsc 'split("\n")[:-1]')" \
+                                '.stacks |= map((.branches |= map(select(.branch as $b | $gone | index($b) | not))) | select((.branches | length) > 0))' \
                                 "$state" > "$tmp" 2>/dev/null && mv "$tmp" "$state"; then
                                 _gw_info "  gh-stack state: dropped merged '$rebase_from'"
                             else
@@ -1373,11 +1411,11 @@ EOF
         echo >&2
         if [[ "$backend" != ghstack ]]; then
             _gw_warning "--link needs the ghstack backend (GitHub remote + gh stack); skipping."
-        elif (( ${#queue} < 2 )); then
+        elif (( ${#active_queue} < 2 )); then
             _gw_warning "--link needs at least two branches in the chain; skipping."
         else
-            _gw_info "gh stack link ${queue[*]}"
-            gh stack link --base "$default_branch" "${queue[@]}" \
+            _gw_info "gh stack link ${active_queue[*]}"
+            gh stack link --base "$default_branch" "${active_queue[@]}" \
                 || _gw_warning "gh stack link failed (is the repo stacked-PR enabled?)."
         fi
     fi

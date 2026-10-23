@@ -125,3 +125,131 @@ git -C "$tmp/repo" merge-base --is-ancestor child grandchild
 [[ "$(git -C "$tmp/repo" show grandchild:child.txt)" == resolved-child ]]
 [[ -z "$(git -C "$tmp/repo" for-each-ref --format='%(refname)' refs/gwsync/bases/)" ]]
 print 'gwsync manually continued child: ok'
+
+# Squashed stacked PRs retain their old PR bases after all parents land on main.
+for recovery in stack reflog missing partial; do
+(
+    git init --initial-branch=main "$tmp/merged-$recovery" >/dev/null
+    cd "$tmp/merged-$recovery"
+    git config user.name 'Worktree Test'
+    git config user.email 'worktree-test@example.invalid'
+    print main > main.txt
+    git add .
+    git commit -m main >/dev/null
+    git init --bare --initial-branch=main "$tmp/merged-origin-$recovery.git" >/dev/null
+    git remote add origin https://github.com/test/merged.git
+    git config "url.$tmp/merged-origin-$recovery.git.insteadOf" https://github.com/test/merged.git
+    git push -u origin main >/dev/null 2>&1
+    for name in bottom middle top; do
+        git switch -c "$name" >/dev/null 2>&1
+        print "$name" > "$name.txt"
+        git add .
+        git commit -m "$name" >/dev/null
+    done
+    old_top=$(git rev-parse top)
+    git worktree add -b leaf "$tmp/leaf-$recovery" top >/dev/null 2>&1
+    print leaf > "$tmp/leaf-$recovery/leaf.txt"
+    git -C "$tmp/leaf-$recovery" add .
+    git -C "$tmp/leaf-$recovery" commit -m leaf >/dev/null
+    if [[ "$recovery" == reflog || "$recovery" == missing ]]; then
+        print amended-top > top.txt
+        git add .
+        git commit --amend --no-edit >/dev/null
+        git -C "$tmp/leaf-$recovery" rebase --onto top "$old_top" >/dev/null
+    fi
+    if [[ "$recovery" == partial ]]; then
+        git switch middle >/dev/null 2>&1
+        git merge --squash top >/dev/null
+        git commit -m 'squash top into middle' >/dev/null
+        git push origin bottom middle >/dev/null 2>&1
+        git switch main >/dev/null 2>&1
+    else
+        git switch main >/dev/null 2>&1
+        git merge --squash top >/dev/null
+        git commit -m 'squash stack' >/dev/null
+        git push origin main >/dev/null 2>&1
+    fi
+    cd "$tmp/leaf-$recovery"
+    state=$(git rev-parse --git-path gh-stack)
+    print '{"stacks":[{"trunk":{"branch":"main"},"branches":[{"branch":"bottom"},{"branch":"middle"},{"branch":"top"},{"branch":"leaf"}]}]}' \
+        | jq --arg base "$old_top" '.stacks[0].branches[3].base = $base' > "$state"
+    cp "$state" "$tmp/state-before"
+    git config git-town-branch.leaf.parent main
+    _GW_HAS_GHSTACK=yes
+    # Keep all Git traffic local while presenting a GitHub remote to sync.
+    git() {
+        if [[ "$*" == 'remote get-url origin' ]]; then
+            print https://github.com/test/merged.git
+        else
+            command git "$@"
+        fi
+    }
+    gh() {
+        if [[ "$1 $2" == 'repo view' ]]; then
+            print main
+        elif [[ "$1 $2" == 'pr list' ]]; then
+            while (( $# )); do
+                if [[ "$1" == --head ]]; then
+                    case "$2" in
+                        bottom) [[ "$recovery" == partial ]] && print null || print main ;;
+                        middle) [[ "$recovery" == partial ]] && print null || print bottom ;;
+                        top) print middle ;;
+                        cycle) print cycle ;;
+                        *) print null ;;
+                    esac
+                    return 0
+                fi
+                shift
+            done
+            return 1
+        else
+            return 1
+        fi
+    }
+    if [[ "$recovery" == partial ]]; then
+        _gw_is_merged_into top middle https://github.com/test/merged.git
+    else
+        _gw_is_merged_into top main https://github.com/test/merged.git
+    fi
+    if _gw_is_merged_into leaf main https://github.com/test/merged.git \
+        || _gw_is_merged_into cycle main https://github.com/test/merged.git; then
+        print -u2 'unmerged or cyclic PR must not count as merged'
+        exit 1
+    fi
+    if [[ "$recovery" == partial ]]; then
+        git branch -D top >/dev/null
+        new_parent=middle
+        expected_chain=$'main\nbottom\nmiddle\nleaf'
+    else
+        git branch -D bottom middle top >/dev/null
+        new_parent=main
+        expected_chain=$'main\nleaf'
+    fi
+    if [[ "$recovery" == missing ]]; then
+        git reflog expire --expire=now HEAD
+        tip=$(git rev-parse HEAD)
+        if GIT_WORKTREE_STACK=ghstack git_worktree_sync --no-push; then
+            print -u2 'sync must reject an unknown parent boundary'
+            exit 1
+        fi
+        cmp "$state" "$tmp/state-before"
+        [[ "$(git rev-parse HEAD)" == "$tip" ]]
+        [[ ! -d "$(git rev-parse --git-path rebase-merge)" ]]
+        exit 0
+    fi
+    GIT_WORKTREE_STACK=ghstack git_worktree_sync --dry-run --no-push || exit 1
+    cmp "$state" "$tmp/state-before"
+    GIT_WORKTREE_STACK=ghstack git_worktree_sync --no-push || exit 1
+    [[ "$(_gw_branch_chain leaf ghstack main)" == "$expected_chain" ]]
+    [[ "$(git config git-town-branch.leaf.parent)" == "$new_parent" ]]
+    git merge-base --is-ancestor "$new_parent" leaf
+    [[ "$(git rev-list --count "$new_parent..leaf")" == 1 ]]
+    [[ "$(git show leaf:leaf.txt)" == leaf ]]
+    [[ -z "$(git for-each-ref --format='%(refname)' refs/gwsync/bases/leaf)" ]]
+    # A second sync must not resurrect the stale stack or replay merged commits.
+    tip=$(git rev-parse HEAD)
+    GIT_WORKTREE_STACK=ghstack git_worktree_sync --no-push || exit 1
+    [[ "$(git rev-parse HEAD)" == "$tip" ]]
+)
+done
+print 'gwsync merged-parent retargeting and boundary recovery: ok'
