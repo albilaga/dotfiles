@@ -168,6 +168,7 @@ function update {
     brew update && brew upgrade && brew autoremove
     npm update -g && pi update --extensions
     android update
+    sdkmanager --update
     sudo mas upgrade
     xcodes install --latest --experimental-unxip
   elif [[ "$OSTYPE" == linux* ]]; then
