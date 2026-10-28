@@ -171,10 +171,10 @@ function update {
     android skills update --all
     npx skills update --global
     sdkmanager --update
-    sudo mas upgrade
+    command sudo mas upgrade
     xcodes install --latest --experimental-unxip
   elif [[ "$OSTYPE" == linux* ]]; then
-    sudo apt update && sudo apt upgrade -y && sudo apt autoremove -y
+    command sudo apt update && command sudo apt upgrade -y && command sudo apt autoremove -y
   fi
   if command -v herdr >/dev/null 2>&1; then
     herdr plugin update --yes
@@ -307,7 +307,7 @@ export PATH="$HOME/.cargo/bin:$PATH"
 export PATH="$PATH:$(go env GOPATH)/bin"
 
 # Android SDK
-export PATH="$HOME/Library/Android/sdk/platform-tools/:$PATH"
+export PATH="$HOME/Library/Android/sdk/cmdline-tools/latest/bin:$HOME/Library/Android/sdk/platform-tools/:$PATH"
 
 # pipx
 export PATH="$PATH:$HOME/.local/bin"

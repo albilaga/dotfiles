@@ -29,13 +29,26 @@ class HerdrTests(unittest.TestCase):
     def test_update_plugins_on_both_platforms(self):
         mocks = """
         brew() { :; }; npm() { :; }; pi() { :; }; android() { :; }
-        npx() { :; }; sdkmanager() { :; }; sudo() { :; }; xcodes() { :; }
+        npx() { :; }; sdkmanager() { :; }; xcodes() { :; }
+        sudo() { print -r -- 'unexpected sudo wrapper'; return 1; }
         herdr() { print -r -- "$*"; }
         """
-        for platform in ("darwin24", "linux-gnu"):
-            with self.subTest(platform=platform):
-                output = self.run_zsh(mocks + UPDATE + f"\nOSTYPE={platform}; update")
-                self.assertEqual(output.strip(), "plugin update --yes")
+        with tempfile.TemporaryDirectory() as directory:
+            sudo = Path(directory) / "sudo"
+            sudo.write_text('#!/bin/sh\nprintf "sudo %s\\n" "$*"\n')
+            sudo.chmod(0o755)
+            for platform in ("darwin24", "linux-gnu"):
+                with self.subTest(platform=platform):
+                    output = self.run_zsh(
+                        mocks + UPDATE + f"\nOSTYPE={platform}; update",
+                        PATH=f"{directory}:{os.environ['PATH']}",
+                    )
+                    expected = (
+                        "sudo mas upgrade\n"
+                        if platform.startswith("darwin")
+                        else "sudo apt update\nsudo apt upgrade -y\nsudo apt autoremove -y\n"
+                    )
+                    self.assertEqual(output, expected + "plugin update --yes\n")
 
     def test_update_reports_plugin_failure(self):
         result = subprocess.run(
