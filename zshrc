@@ -176,6 +176,7 @@ function update {
   elif [[ "$OSTYPE" == linux* ]]; then
     command sudo apt update && command sudo apt upgrade -y && command sudo apt autoremove -y
   fi
+  gh extension upgrade stack
   if command -v herdr >/dev/null 2>&1; then
     herdr plugin update --yes
   fi

@@ -30,6 +30,7 @@ class HerdrTests(unittest.TestCase):
         mocks = """
         brew() { :; }; npm() { :; }; pi() { :; }; android() { :; }
         npx() { :; }; xcodes() { :; }
+        gh() { print -r -- "gh $*"; }
         sudo() { print -r -- 'unexpected sudo wrapper'; return 1; }
         herdr() { print -r -- "$*"; }
         """
@@ -48,11 +49,11 @@ class HerdrTests(unittest.TestCase):
                         if platform.startswith("darwin")
                         else "sudo apt update\nsudo apt upgrade -y\nsudo apt autoremove -y\n"
                     )
-                    self.assertEqual(output, expected + "plugin update --yes\n")
+                    self.assertEqual(output, expected + "gh extension upgrade stack\nplugin update --yes\n")
 
     def test_update_reports_plugin_failure(self):
         result = subprocess.run(
-            ["zsh", "-f", "-c", 'herdr() { return 1; }\n' + UPDATE + '\nOSTYPE=other; update'],
+            ["zsh", "-f", "-c", 'gh() { :; }; herdr() { return 1; }\n' + UPDATE + '\nOSTYPE=other; update'],
             capture_output=True,
         )
         self.assertEqual(result.returncode, 1)
