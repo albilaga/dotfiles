@@ -170,7 +170,7 @@ function update {
     android update
     android skills update --all
     npx skills update --global
-    sdkmanager --update
+    android sdk update
     command sudo mas upgrade
     xcodes install --latest --experimental-unxip
   elif [[ "$OSTYPE" == linux* ]]; then
