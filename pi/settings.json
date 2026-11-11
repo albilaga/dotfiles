@@ -1,5 +1,11 @@
 {
   "theme": "system",
+  "enabledModels": [
+    "openrouter/z-ai/glm-5.3-flash",
+    "openrouter/deepseek/deepseek-v4.1-flash-1017",
+    "openai/gpt-6.1-sol",
+    "openai/gpt-6-astra"
+  ],
   "subagents": {
     "agentOverrides": {
       "scout": { "model": "openrouter/z-ai/glm-5.3-flash" },
