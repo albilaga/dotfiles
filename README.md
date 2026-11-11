@@ -57,14 +57,14 @@ make herdr      # Install Herdr plugins through its native plugin manager
 make pi         # Install pi coding agent configs, packages, and settings
 ```
 
-Pi defaults to the existing laptop profile, or `personal` on first install. Switch it with:
+Pi uses the same model settings on personal and work machines (previously the work profile).
+Most subagents use OpenRouter; `evidence-auditor` and `oracle` still use direct OpenAI.
+Run `make pi` on each machine to apply shared settings.
 
-```bash
-make pi PROFILE=work      # Codex + OpenRouter
-make pi PROFILE=personal  # Codex + Z.AI
-```
-
-The selected profile is stored as `dotfilesProfile` in `~/.pi/agent/settings.json`.
+Keep credentials machine-local: run `/login` in Pi, select OpenRouter, and enter that
+machine's API key. Credentials stay in `~/.pi/agent/auth.json`, outside this repository;
+`make pi` leaves them untouched. Alternatively, set `OPENROUTER_API_KEY` in private
+shell configuration (`~/.zsh.d/private/`); stored login credentials take precedence.
 
 ### 4. Set up GPG signing (macOS)
 
