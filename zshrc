@@ -177,6 +177,7 @@ function update {
     command sudo apt update && command sudo apt upgrade -y && command sudo apt autoremove -y
   fi
   gh extension upgrade stack
+  gh skill update --all
   if command -v herdr >/dev/null 2>&1; then
     herdr plugin update --yes
   fi
