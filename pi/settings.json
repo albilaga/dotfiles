@@ -22,6 +22,7 @@
   "hideThinkingBlock": true,
   "quietStartup": true,
   "enableInstallTelemetry": false,
+  "enableAnalytics": false,
   "packages": [
     "npm:@dietrichgebert/ponytail",
     "npm:@pi-archimedes/image-paste",
