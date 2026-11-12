@@ -1,5 +1,7 @@
 {
   "theme": "system",
+  "defaultProvider": "openai",
+  "defaultModel": "gpt-6.1-sol",
   "enabledModels": [
     "openrouter/z-ai/glm-5.3-flash",
     "openrouter/deepseek/deepseek-v4.1-flash-1017",
