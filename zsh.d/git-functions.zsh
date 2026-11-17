@@ -112,9 +112,10 @@ _gw_is_merged_into() {
     if [[ "$remote_url" == *"github.com"* ]] && _gw_check_gh_cli quiet; then
         local base_ref current="$branch" depth
         for (( depth = 0; depth < 32; depth++ )); do
+            # Recreated branches can share a name with an older merged PR.
             base_ref=$(gh pr list --repo "$(_gw_github_repo_path "$remote_url")" \
-                --head "$current" --state merged --json baseRefName \
-                --jq '.[0].baseRefName' 2>/dev/null) || break
+                --head "$current" --state all --json number,state,baseRefName \
+                --jq 'sort_by(.number) | last | select(.state == "MERGED") | .baseRefName' 2>/dev/null) || break
             [[ "$base_ref" == "$base" ]] && return 0
             [[ -z "$base_ref" || "$base_ref" == null || "$base_ref" == "$current" ]] && break
             current="$base_ref"

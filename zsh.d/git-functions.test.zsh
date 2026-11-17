@@ -253,3 +253,39 @@ for recovery in stack reflog missing partial; do
 )
 done
 print 'gwsync merged-parent retargeting and boundary recovery: ok'
+
+# A recreated branch's newest PR takes precedence over historical merged PRs.
+(
+    cd "$tmp/child"
+    gh() {
+        local state_filter='' query=''
+        while (( $# )); do
+            case "$1" in
+                --state) state_filter="$2"; shift ;;
+                --jq) query="$2"; shift ;;
+            esac
+            shift
+        done
+        print -r -- "$pr_data" | jq --arg state_filter "$state_filter" \
+            'if $state_filter == "merged" then map(select(.state == "MERGED")) else . end' \
+            | jq -r "$query"
+    }
+    for pr_state in OPEN CLOSED; do
+        pr_data=$(jq -nc --arg state "$pr_state" \
+            '[{number: 979, state: $state, baseRefName: "main"},
+              {number: 806, state: "MERGED", baseRefName: "main"}]')
+        if _gw_is_merged_into child main https://github.com/test/reused.git; then
+            print -u2 "newest $pr_state PR must not count as merged"
+            exit 1
+        fi
+    done
+    pr_data='[{"number":979,"state":"MERGED","baseRefName":"main"}]'
+    _gw_is_merged_into child main https://github.com/test/reused.git
+    pr_data='[]'
+    if _gw_is_merged_into child main https://github.com/test/reused.git; then
+        print -u2 'branch without PR or merged ancestry must not count as merged'
+        exit 1
+    fi
+    _gw_is_merged_into main main https://github.com/test/reused.git
+)
+print 'gwsync recreated branch merge detection: ok'
