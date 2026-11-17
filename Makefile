@@ -41,6 +41,7 @@ pi-packages:
 		pi list | grep -Fq "  $$package" || pi install "$$package"; \
 	done
 	gh extension list | grep -q '^gh stack[[:space:]]' || gh extension install github/gh-stack
+	test -f $(HOME)/.pi/agent/skills/gh-stack/SKILL.md || gh skill install github/gh-stack gh-stack --agent pi --scope user
 	# Idempotent; installs ~/.pi/agent/extensions/herdr-agent-state.ts (generated
 	# by herdr, not tracked in dotfiles - recreated here).
 	command -v herdr >/dev/null && herdr integration install pi >/dev/null || true
