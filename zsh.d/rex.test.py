@@ -32,7 +32,8 @@ class RexTests(unittest.TestCase):
                 "sys.exit(1 if os.environ.get('REX_TEST_FAIL') == operation else 0)\n"
             )
             rex.chmod(0o755)
-            worktree = "/projects/repo with 'quotes'/feature"
+            worktree = str(Path(directory) / "repo with 'quotes'/feature")
+            Path(worktree).mkdir(parents=True)
             listing = ["window", "ls", "-s", "session:project", "--json"]
             create = [
                 "window", "new", "-s", "session:project", worktree, "-c", worktree
@@ -63,7 +64,7 @@ class RexTests(unittest.TestCase):
                     log.unlink(missing_ok=True)
                     subprocess.run(
                         ["zsh", "-f", "-e", "-c",
-                         'source "$1"; _gw_rex_open_worktree "$2"',
+                         'source "$1"; _gw_open_worktree "$2"',
                          "zsh", str(ROOT / "zsh.d/git-functions.zsh"), worktree],
                         env={
                             **os.environ,
@@ -77,6 +78,52 @@ class RexTests(unittest.TestCase):
                     )
                     calls = [json.loads(line) for line in log.read_text().splitlines()] if log.exists() else []
                     self.assertEqual(calls, expected)
+
+    def test_gwa_and_gws_preserve_source_directory_only_inside_rex(self):
+        for session in ("", "session:project"):
+            with self.subTest(session=session), tempfile.TemporaryDirectory() as directory:
+                repo = Path(directory).resolve() / "repo"
+                subprocess.run(["git", "init", "--initial-branch=main", str(repo)], check=True, capture_output=True)
+                subprocess.run(
+                    ["git", "-C", str(repo), "-c", "user.name=Test", "-c",
+                     "user.email=test@example.invalid", "-c", "commit.gpgsign=false",
+                     "commit", "--allow-empty", "-m", "initial"],
+                    check=True, capture_output=True,
+                )
+                subprocess.run(
+                    ["zsh", "-f", "-e", "-c", '''
+                    source "$1"
+                    cd "$2"
+                    source_dir="$PWD"
+                    worktree_target="${source_dir}.worktrees/feature"
+                    rex() {
+                        if [[ "$1 $2" == 'window ls' ]]; then
+                            print -r -- '{"windows":[]}'
+                        fi
+                        return 0
+                    }
+                    fzf() { :; }
+                    _gw_fzf_pick() { print -r -- "$worktree_target"; }
+                    _gw_has_town() { return 1; }
+                    for action in new existing switch; do
+                        cd "$source_dir"
+                        case "$action" in
+                            new) git_worktree_add feature main ;;
+                            existing) git_worktree_add feature ;;
+                            switch) git_worktree_switch ;;
+                        esac
+                        if [[ -n "$REX_SESSION" ]]; then
+                            [[ "$PWD" == "$source_dir" ]]
+                            [[ "$(git branch --show-current)" == main ]]
+                        else
+                            [[ "$PWD" == "$worktree_target" ]]
+                            [[ "$(git branch --show-current)" == feature ]]
+                        fi
+                    done
+                    ''', "zsh", str(ROOT / "zsh.d/git-functions.zsh"), str(repo)],
+                    env={**os.environ, "REX_SESSION": session, "GIT_WORKTREE_STACK": "plain"},
+                    check=True, capture_output=True, text=True,
+                )
 
     def test_update_refreshes_rex_skill_on_both_platforms(self):
         mocks = """

@@ -237,12 +237,12 @@ git_auto_cleanup() {
 #
 # Commands:
 #   gwa <branch> [base-ref]  add a worktree (new/existing/remote branch), copy
-#                            paths listed in .gwa-copy-files, then cd.
+#                            paths listed in .gwa-copy-files, then open it.
 #                            A NEW branch with no base-ref STACKS on the current
 #                            branch using the detected stacking backend; on
 #                            main/master it branches off fresh origin/<default>.
 #   gwl                      pretty list of worktrees (with parent branch)
-#   gws                      fzf-switch (cd) between worktrees
+#   gws                      fzf-switch between worktrees
 #   gwrm                     fzf-remove a worktree (protects main/current/dirty)
 #   gwclean                  remove MERGED worktrees, delete branches, prune
 #   gwsync                   sync a worktree's branch with its parent chain
@@ -710,10 +710,13 @@ _gw_stack_create_branch() {
     return 0
 }
 
-# Best-effort: Rex must never block Git, or create tabs outside this session.
-_gw_rex_open_worktree() {
+# Rex switches tabs, not this shell's directory; failures must never block Git.
+_gw_open_worktree() {
     local wt_path="$1" windows window_id
-    [[ -n "${REX_SESSION:-}" ]] || return 0
+    if [[ -z "${REX_SESSION:-}" ]]; then
+        cd "$wt_path"
+        return $?
+    fi
     command -v rex >/dev/null 2>&1 && command -v jq >/dev/null 2>&1 || return 0
     windows=$(rex window ls -s "$REX_SESSION" --json 2>/dev/null) || return 0
     # Full paths distinguish same-named worktrees from different repositories.
@@ -748,7 +751,7 @@ _gw_copy_files() {
     cp -p "$source_root/.gwa-copy-files" "$wt_path/.gwa-copy-files"
 }
 
-# --- gwa : add a worktree for a new/existing/remote branch, then cd ---------
+# --- gwa : add and open a worktree for a new/existing/remote branch --------
 git_worktree_add() {
     local branch="$1" base_ref="$2" source_root
 
@@ -772,15 +775,13 @@ git_worktree_add() {
         return 1
     }
 
-    # If this branch is already checked out in a worktree, just cd into it.
+    # If this branch is already checked out in a worktree, open it.
     local i
     _gw_parse_worktrees
     for (( i = 1; i <= ${#_GW_WT_BRANCH[@]}; i++ )); do
         if [[ "${_GW_WT_BRANCH[$i]}" == "$branch" ]]; then
             _gw_info "Branch '$branch' already checked out -> switching."
-            cd "${_GW_WT_PATH[$i]}" || return 1
-            _gw_success "Now in ${_GW_WT_PATH[$i]}"
-            _gw_rex_open_worktree "${_GW_WT_PATH[$i]}"
+            _gw_open_worktree "${_GW_WT_PATH[$i]}"
             return $?
         fi
     done
@@ -868,9 +869,8 @@ git_worktree_add() {
 
     if [[ -d "$wt_path" ]]; then
         _gw_copy_files "$source_root" "$wt_path"
-        cd "$wt_path" || return 1
-        _gw_success "Now in worktree: $wt_path  (branch: $branch)"
-        _gw_rex_open_worktree "$wt_path"
+        _gw_open_worktree "$wt_path" || return 1
+        _gw_success "Worktree ready: $wt_path  (branch: $branch)"
     else
         _gw_error "Worktree dir missing after add: $wt_path"
         return 1
@@ -893,7 +893,7 @@ git_worktree_list() {
     done
 }
 
-# --- gws : fzf-switch (cd) between worktrees --------------------------------
+# --- gws : fzf-switch between worktrees -------------------------------------
 git_worktree_switch() {
     if ! _gw_in_repo; then
         _gw_error "Not in a git repository!"
@@ -905,12 +905,10 @@ git_worktree_switch() {
         return 1
     fi
     local target
-    target="$(_gw_fzf_pick 'cd to worktree')"
+    target="$(_gw_fzf_pick 'open worktree')"
     [[ -z "$target" ]] && return 0
     if [[ -d "$target" ]]; then
-        cd "$target" || return 1
-        _gw_success "Now in $(pwd)"
-        _gw_rex_open_worktree "$target"
+        _gw_open_worktree "$target"
     else
         _gw_error "Path no longer exists: $target"
         return 1
@@ -1441,9 +1439,9 @@ EOF
 }
 
 # --- worktree aliases (gw* namespace) --------------------------------------
-alias gwa='git_worktree_add'          # gwa <branch> [base-ref] : add + cd
+alias gwa='git_worktree_add'          # gwa <branch> [base-ref] : add + open
 alias gwl='git_worktree_list'         # pretty list (branch -> parent)
-alias gws='git_worktree_switch'       # fzf cd-switch
+alias gws='git_worktree_switch'       # fzf worktree switch
 alias gwrm='git_worktree_remove'      # fzf remove (safe)
 alias gwclean='git_worktree_cleanup'  # remove merged worktrees + prune
 alias gwsync='git_worktree_sync'      # sync chain with parent/main (-a = all)

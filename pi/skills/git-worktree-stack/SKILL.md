@@ -21,13 +21,16 @@ Run from target worktree. Stop on nonzero status; `gwsync` returns nonzero when 
 
 Use one Rex session per project (`rex new Project -c /path/to/repo`). Inside Rex
 (`REX_SESSION` set), `gwa` and `gws` open or focus a worktree tab in that same
-session. Rex calls tabs "windows". Managed tab labels are full worktree paths;
+session without changing the original shell\'s directory or branch. To run more
+commands in the target worktree, use its tab or explicitly `cd` there; do not
+assume `gwa`/`gws` changed the invoking shell. Rex calls tabs "windows".
+Managed tab labels are full worktree paths;
 keep them unchanged for reuse. Outside Rex, no session or tab is created.
 Rex failures never fail the Git operation.
 
 ## Commands
 
-- `gwa <branch> [base-ref]`: create or attach sibling worktree, copy files listed in `.gwa-copy-files`, then enter it. Without base ref, new branch stacks on current feature branch; from default branch it starts at fresh `origin/<default>`.
+- `gwa <branch> [base-ref]`: create or attach sibling worktree, copy files listed in `.gwa-copy-files`, then open it (Rex tab, otherwise `cd`). Without base ref, new branch stacks on current feature branch; from default branch it starts at fresh `origin/<default>`.
 - `gwl`: list worktrees as branch, parent, path, commit, and flags.
 - `gws`: interactively switch worktrees with fzf.
 - `gwrm`: interactively remove worktree; protects main/current and prompts before losing dirty work.

@@ -62,7 +62,8 @@ Install Rex separately and put its `rex` CLI on `PATH` before running `make rex`
 Rex updates through the app; `update` refreshes its Pi skill through `rex skill setup`.
 
 Use one Rex session per project (`rex new Project -c /path/to/repo`). Inside that
-session, `gwa` and `gws` open or focus a tab for the selected worktree. Rex calls
+session, `gwa` and `gws` open or focus a tab for the selected worktree, leaving
+the original tab\'s directory and branch unchanged. Rex calls
 tabs "windows" in its CLI. Managed tabs use the full worktree path as their label
 to avoid collisions; renaming one means the next switch opens a new managed tab.
 Outside Rex, worktree commands only change the current shell's directory.
