@@ -21,12 +21,13 @@ Run from target worktree. Stop on nonzero status; `gwsync` returns nonzero when 
 
 Use one Rex session per project (`rex new Project -c /path/to/repo`). Inside Rex
 (`REX_SESSION` set), `gwa` and `gws` open or focus a worktree tab in that same
-session without changing the original shell\'s directory or branch. To run more
+session without changing the original shell's directory or branch. To run more
 commands in the target worktree, use its tab or explicitly `cd` there; do not
 assume `gwa`/`gws` changed the invoking shell. Rex calls tabs "windows".
-Managed tab labels are full worktree paths;
-keep them unchanged for reuse. Outside Rex, no session or tab is created.
-Rex failures never fail the Git operation.
+Tab titles use the branch's final `/`-separated segment and update at shell
+prompts. Pane labels retain full worktree paths for tab reuse; leave pane labels
+unchanged. Outside Rex, no session or tab is created. Rex failures never fail
+the Git operation.
 
 ## Commands
 

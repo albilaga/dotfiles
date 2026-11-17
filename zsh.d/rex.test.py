@@ -28,6 +28,8 @@ class RexTests(unittest.TestCase):
                 "    log.write(json.dumps(args) + '\\n')\n"
                 "if args[:2] == ['window', 'ls']:\n"
                 "    print(os.environ['REX_TEST_WINDOWS'])\n"
+                "if args[:2] == ['window', 'new']:\n"
+                "    print(json.dumps({'block_ids': ['block:new']}))\n"
                 "operation = args[1] if args[0] == 'window' else args[0]\n"
                 "sys.exit(1 if os.environ.get('REX_TEST_FAIL') == operation else 0)\n"
             )
@@ -36,11 +38,19 @@ class RexTests(unittest.TestCase):
             Path(worktree).mkdir(parents=True)
             listing = ["window", "ls", "-s", "session:project", "--json"]
             create = [
-                "window", "new", "-s", "session:project", worktree, "-c", worktree
+                "window", "new", "-s", "session:project", "feature", "-c", worktree, "--json"
             ]
+            rename = ["block", "rename", "-s", "session:project", "block:new", worktree]
             for session, windows, fail, expected in (
                 ("", {"windows": []}, "0", []),
-                ("session:project", {"windows": []}, "0", [listing, create]),
+                ("session:project", {"windows": []}, "0", [listing, create, rename]),
+                (
+                    "session:project",
+                    {"windows": [{"label": "feature", "window_id": "window:existing",
+                                  "layers": [{"blocks": [{"label": worktree}]}]}]},
+                    "0",
+                    [listing, ["focus", "-s", "session:project", "window:existing"]],
+                ),
                 (
                     "session:project",
                     {"windows": [
@@ -124,6 +134,52 @@ class RexTests(unittest.TestCase):
                     env={**os.environ, "REX_SESSION": session, "GIT_WORKTREE_STACK": "plain"},
                     check=True, capture_output=True, text=True,
                 )
+
+    def test_prompt_titles_follow_branch_without_targeting_active_tab(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo = Path(directory).resolve() / "repo"
+            log = Path(directory) / "calls"
+            subprocess.run(["git", "init", "--initial-branch=feature/login", str(repo)], check=True, capture_output=True)
+            subprocess.run(
+                ["git", "-C", str(repo), "-c", "user.name=Test", "-c",
+                 "user.email=test@example.invalid", "-c", "commit.gpgsign=false",
+                 "commit", "--allow-empty", "-m", "initial"],
+                check=True, capture_output=True,
+            )
+            subprocess.run(
+                ["zsh", "-f", "-e", "-c", '''
+                source "$1"
+                cd "$2"
+                rex() {
+                    print -r -- "$*" >> "$REX_TEST_LOG"
+                    if [[ "$1 $2" == 'block inspect' ]]; then
+                        print -r -- '{"block":{"window_id":"window:self"}}'
+                    fi
+                    return 0
+                }
+                _gw_rex_update_tab_title
+                _gw_rex_update_tab_title
+                git switch -c team/feature/next
+                _gw_rex_update_tab_title
+                git switch --detach
+                _gw_rex_update_tab_title
+                cd ..
+                _gw_rex_update_tab_title
+                cd "$2"
+                git switch feature/login
+                REX_SESSION='' _gw_rex_update_tab_title
+                ''', "zsh", str(ROOT / "zsh.d/git-functions.zsh"), str(repo)],
+                env={**os.environ, "REX_SESSION": "session:project", "REX_BLOCK": "block:self", "REX_TEST_LOG": str(log)},
+                check=True, capture_output=True, text=True,
+            )
+            self.assertEqual(log.read_text().splitlines(), [
+                "block inspect -s session:project block:self --json",
+                f"block rename -s session:project block:self {repo}",
+                "window rename -s session:project window:self login",
+                "block inspect -s session:project block:self --json",
+                f"block rename -s session:project block:self {repo}",
+                "window rename -s session:project window:self next",
+            ])
 
     def test_update_refreshes_rex_skill_on_both_platforms(self):
         mocks = """

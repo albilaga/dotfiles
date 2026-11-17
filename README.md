@@ -63,9 +63,11 @@ Rex updates through the app; `update` refreshes its Pi skill through `rex skill 
 
 Use one Rex session per project (`rex new Project -c /path/to/repo`). Inside that
 session, `gwa` and `gws` open or focus a tab for the selected worktree, leaving
-the original tab\'s directory and branch unchanged. Rex calls
-tabs "windows" in its CLI. Managed tabs use the full worktree path as their label
-to avoid collisions; renaming one means the next switch opens a new managed tab.
+the original tab's directory and branch unchanged. Rex calls
+tabs "windows" in its CLI. At each shell prompt inside a Git repo, the tab title
+uses the branch's final `/`-separated segment (`feature/login` → `login`).
+Pane labels retain the full worktree path so matching branch titles do not break
+tab reuse. Outside Git or on detached HEAD, the prompt leaves the title unchanged.
 Outside Rex, worktree commands only change the current shell's directory.
 
 This replaces Herdr workspaces with Rex sessions and Herdr worktrees with Rex

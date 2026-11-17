@@ -712,23 +712,50 @@ _gw_stack_create_branch() {
 
 # Rex switches tabs, not this shell's directory; failures must never block Git.
 _gw_open_worktree() {
-    local wt_path="$1" windows window_id
+    local wt_path="$1" windows window_id branch created block_id
     if [[ -z "${REX_SESSION:-}" ]]; then
         cd "$wt_path"
         return $?
     fi
     command -v rex >/dev/null 2>&1 && command -v jq >/dev/null 2>&1 || return 0
     windows=$(rex window ls -s "$REX_SESSION" --json 2>/dev/null) || return 0
-    # Full paths distinguish same-named worktrees from different repositories.
+    # Pane labels retain worktree identity independently of the visible tab title.
     window_id=$(print -r -- "$windows" | jq -r --arg cwd "$wt_path" \
-        '.windows | map(select(.label == $cwd)) | .[0].window_id // empty' 2>/dev/null) || return 0
+        '[.windows[] | select(.label == $cwd or any(.layers[]?.blocks[]?; .label == $cwd))][0].window_id // empty' \
+        2>/dev/null) || return 0
     if [[ -n "$window_id" ]]; then
         rex focus -s "$REX_SESSION" "$window_id" >/dev/null 2>&1 || return 0
     else
-        rex window new -s "$REX_SESSION" "$wt_path" -c "$wt_path" >/dev/null 2>&1 || return 0
+        branch=$(git -C "$wt_path" branch --show-current 2>/dev/null) || branch=""
+        [[ -n "$branch" ]] || branch="${wt_path:t}"
+        created=$(rex window new -s "$REX_SESSION" "${branch##*/}" -c "$wt_path" --json 2>/dev/null) || return 0
+        block_id=$(print -r -- "$created" | jq -er '.block_ids[0] // empty' 2>/dev/null) || return 0
+        rex block rename -s "$REX_SESSION" "$block_id" "$wt_path" >/dev/null 2>&1 || return 0
     fi
     return 0
 }
+
+_gw_rex_update_tab_title() {
+    [[ -n "${REX_SESSION:-}" && -n "${REX_BLOCK:-}" ]] || return 0
+    command -v rex >/dev/null 2>&1 && command -v jq >/dev/null 2>&1 || return 0
+    local repo_root branch context block window_id
+    repo_root=$(git rev-parse --show-toplevel 2>/dev/null) || return 0
+    branch=$(git branch --show-current 2>/dev/null) || return 0
+    [[ -n "$branch" ]] || return 0
+    context="${REX_SESSION}:${REX_BLOCK}:$repo_root:$branch"
+    [[ "${_GW_REX_TAB_CONTEXT:-}" != "$context" ]] || return 0
+    block=$(rex block inspect -s "$REX_SESSION" "$REX_BLOCK" --json 2>/dev/null) || return 0
+    window_id=$(print -r -- "$block" | jq -er '.block.window_id // empty' 2>/dev/null) || return 0
+    rex block rename -s "$REX_SESSION" "$REX_BLOCK" "$repo_root" >/dev/null 2>&1 || return 0
+    rex window rename -s "$REX_SESSION" "$window_id" "${branch##*/}" >/dev/null 2>&1 || return 0
+    typeset -g _GW_REX_TAB_CONTEXT="$context"
+    return 0
+}
+
+if [[ -o interactive ]]; then
+    autoload -Uz add-zsh-hook
+    add-zsh-hook precmd _gw_rex_update_tab_title
+fi
 
 # Copy ignored/local files into a fresh worktree. Paths in .gwa-copy-files are
 # relative to the current worktree; blank lines and comments are ignored.
