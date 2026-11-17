@@ -53,9 +53,25 @@ make git      # Install git configs only
 make zsh      # Install zsh configs only
 make config   # Install application configs only
 make zed        # Install Zed editor settings only
-make herdr      # Install Herdr plugins through its native plugin manager
+make rex        # Install Rex's Pi skill with automatic session naming
 make pi         # Install pi coding agent configs, packages, and settings
 ```
+
+Install Rex separately and put its `rex` CLI on `PATH` before running `make rex` or
+`make pi`. Rex is currently distributed through its beta, not this Brewfile.
+Rex updates through the app; `update` refreshes its Pi skill through `rex skill setup`.
+
+Use one Rex session per project (`rex new Project -c /path/to/repo`). Inside that
+session, `gwa` and `gws` open or focus a tab for the selected worktree. Rex calls
+tabs "windows" in its CLI. Managed tabs use the full worktree path as their label
+to avoid collisions; renaming one means the next switch opens a new managed tab.
+Outside Rex, worktree commands only change the current shell's directory.
+
+This replaces Herdr workspaces with Rex sessions and Herdr worktrees with Rex
+tabs. Herdr's Reviewr plugin and shell rename hook have no equivalent installed
+here; Rex's agent skill handles task-based session naming. `make pi` removes the
+old generated `~/.pi/agent/extensions/herdr-agent-state.ts`. Existing Herdr apps,
+plugins, and machine-local configuration are not uninstalled.
 
 Pi uses the same model settings on personal and work machines (previously the work profile).
 Most subagents use OpenRouter; `evidence-auditor` and `oracle` still use direct OpenAI.
@@ -217,7 +233,7 @@ Common shortcuts defined in `gitconfig` and `zsh.d/git-functions.zsh`:
 
 - `ez` - Edit zshrc
 - `sz` - Source zshrc
-- `update` - Update system packages, Pi extensions (macOS), and all GitHub-managed Herdr plugins
+- `update` - Update system packages, Pi extensions (macOS), GitHub-managed skills, and Rex's Pi skill
 - `cleanup` - Clean package manager caches, then prompt to remove stopped Docker containers, all unused volumes (including named volumes; their data is deleted), dangling images, and build cache
 
 ### Tools Integration

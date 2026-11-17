@@ -30,9 +30,8 @@ zed:
 	mkdir -p $(HOME)/.config/zed
 	ln -sf $(DOTFILE_PATH)/zed_config.json $(HOME)/.config/zed/settings.json
 
-herdr:
-	herdr plugin list --json | grep -Fq '"plugin_id":"herdr-automatic-rename"' || herdr plugin install qu8n/herdr-automatic-rename --yes
-	herdr plugin list --json | grep -Fq '"plugin_id":"persiyanov.reviewr"' || herdr plugin install persiyanov/herdr-reviewr --yes
+rex:
+	rex skill setup --agent pi --session-naming
 
 pi-packages:
 	npm install -g --ignore-scripts @earendil-works/pi-coding-agent
@@ -42,12 +41,10 @@ pi-packages:
 	done
 	gh extension list | grep -q '^gh stack[[:space:]]' || gh extension install github/gh-stack
 	test -f $(HOME)/.pi/agent/skills/gh-stack/SKILL.md || gh skill install github/gh-stack gh-stack --agent pi --scope user
-	# Idempotent; installs ~/.pi/agent/extensions/herdr-agent-state.ts (generated
-	# by herdr, not tracked in dotfiles - recreated here).
-	command -v herdr >/dev/null && herdr integration install pi >/dev/null || true
 
-pi: pi-packages
+pi: pi-packages rex
 	mkdir -p $(HOME)/.pi/agent/prompts $(HOME)/.pi/agent/extensions $(HOME)/.pi/agent/skills
+	rm -f $(HOME)/.pi/agent/extensions/herdr-agent-state.ts
 	cp $(DOTFILE_PATH)/pi/settings.json $(HOME)/.pi/agent/settings.json.tmp
 	mv $(HOME)/.pi/agent/settings.json.tmp $(HOME)/.pi/agent/settings.json
 	ln -sf $(DOTFILE_PATH)/pi/keybindings.json $(HOME)/.pi/agent/keybindings.json
@@ -59,5 +56,5 @@ pi: pi-packages
 		ln -sfn $$dir $(HOME)/.pi/agent/skills/$$(basename $$dir); \
 	done
 
-all: git zsh config zed herdr pi
-.PHONY: all git zsh config zed herdr pi pi-packages
+all: git zsh config zed rex pi
+.PHONY: all git zsh config zed rex pi pi-packages

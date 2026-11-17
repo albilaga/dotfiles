@@ -19,6 +19,12 @@ zsh -ic 'gwsync --no-push'
 
 Run from target worktree. Stop on nonzero status; `gwsync` returns nonzero when any branch fails or is skipped.
 
+Use one Rex session per project (`rex new Project -c /path/to/repo`). Inside Rex
+(`REX_SESSION` set), `gwa` and `gws` open or focus a worktree tab in that same
+session. Rex calls tabs "windows". Managed tab labels are full worktree paths;
+keep them unchanged for reuse. Outside Rex, no session or tab is created.
+Rex failures never fail the Git operation.
+
 ## Commands
 
 - `gwa <branch> [base-ref]`: create or attach sibling worktree, copy files listed in `.gwa-copy-files`, then enter it. Without base ref, new branch stacks on current feature branch; from default branch it starts at fresh `origin/<default>`.

@@ -177,8 +177,8 @@ function update {
   fi
   gh extension upgrade stack
   gh skill update --all
-  if command -v herdr >/dev/null 2>&1; then
-    herdr plugin update --yes
+  if command -v rex >/dev/null 2>&1; then
+    rex skill setup --agent pi --session-naming
   fi
 }
 alias cleanup="dotnet nuget locals all -c && brew autoremove && brew cleanup && docker container prune && docker volume prune --all && docker image prune && docker builder prune"
@@ -332,13 +332,6 @@ fi
 # Try out atuin
 if type atuin &> /dev/null; then
   eval "$(atuin init zsh)"
-fi
-
-# Updates retain old installs; load the registered plugin, not the first glob match.
-if [[ "${HERDR_ENV:-}" == 1 ]] && command -v herdr >/dev/null 2>&1; then
-  herdr_rename_root=$(herdr plugin list --json | jq -r '.result.plugins[] | select(.plugin_id == "herdr-automatic-rename") | .source.managed_path // empty')
-  [[ -n "$herdr_rename_root" && -r "$herdr_rename_root/shell/hook.zsh" ]] && source "$herdr_rename_root/shell/hook.zsh"
-  unset herdr_rename_root
 fi
 
 # jenv

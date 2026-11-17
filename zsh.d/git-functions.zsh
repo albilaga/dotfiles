@@ -710,15 +710,20 @@ _gw_stack_create_branch() {
     return 0
 }
 
-# Surface a worktree as a Herdr worktree workspace, grouped under the parent
-# repo's workspace. No-op outside a Herdr pane (no HERDR_ENV) or without the
-# CLI; best-effort so a missing/stale server never blocks the git operation.
-_gw_herdr_open_worktree() {
-    local repo_root="$1" wt_path="$2"
-    [[ "$HERDR_ENV" == 1 ]] || return 0
-    command -v herdr >/dev/null 2>&1 || return 0
-    herdr worktree open --cwd "$repo_root" --path "$wt_path" --focus >/dev/null 2>&1 \
-        && _gw_info "herdr: focused workspace for ${wt_path:t}"
+# Best-effort: Rex must never block Git, or create tabs outside this session.
+_gw_rex_open_worktree() {
+    local wt_path="$1" windows window_id
+    [[ -n "${REX_SESSION:-}" ]] || return 0
+    command -v rex >/dev/null 2>&1 && command -v jq >/dev/null 2>&1 || return 0
+    windows=$(rex window ls -s "$REX_SESSION" --json 2>/dev/null) || return 0
+    # Full paths distinguish same-named worktrees from different repositories.
+    window_id=$(print -r -- "$windows" | jq -r --arg cwd "$wt_path" \
+        '.windows | map(select(.label == $cwd)) | .[0].window_id // empty' 2>/dev/null) || return 0
+    if [[ -n "$window_id" ]]; then
+        rex focus -s "$REX_SESSION" "$window_id" >/dev/null 2>&1 || return 0
+    else
+        rex window new -s "$REX_SESSION" "$wt_path" -c "$wt_path" >/dev/null 2>&1 || return 0
+    fi
     return 0
 }
 
@@ -773,8 +778,9 @@ git_worktree_add() {
     for (( i = 1; i <= ${#_GW_WT_BRANCH[@]}; i++ )); do
         if [[ "${_GW_WT_BRANCH[$i]}" == "$branch" ]]; then
             _gw_info "Branch '$branch' already checked out -> switching."
-            cd "${_GW_WT_PATH[$i]}" && _gw_success "Now in ${_GW_WT_PATH[$i]}"
-            _gw_herdr_open_worktree "$source_root" "${_GW_WT_PATH[$i]}"
+            cd "${_GW_WT_PATH[$i]}" || return 1
+            _gw_success "Now in ${_GW_WT_PATH[$i]}"
+            _gw_rex_open_worktree "${_GW_WT_PATH[$i]}"
             return $?
         fi
     done
@@ -862,8 +868,9 @@ git_worktree_add() {
 
     if [[ -d "$wt_path" ]]; then
         _gw_copy_files "$source_root" "$wt_path"
-        cd "$wt_path" && _gw_success "Now in worktree: $wt_path  (branch: $branch)"
-        _gw_herdr_open_worktree "$source_root" "$wt_path"
+        cd "$wt_path" || return 1
+        _gw_success "Now in worktree: $wt_path  (branch: $branch)"
+        _gw_rex_open_worktree "$wt_path"
     else
         _gw_error "Worktree dir missing after add: $wt_path"
         return 1
@@ -897,13 +904,13 @@ git_worktree_switch() {
         git_worktree_list
         return 1
     fi
-    local target repo_root
-    repo_root="$(git rev-parse --show-toplevel 2>/dev/null)"
+    local target
     target="$(_gw_fzf_pick 'cd to worktree')"
     [[ -z "$target" ]] && return 0
     if [[ -d "$target" ]]; then
-        cd "$target" && _gw_success "Now in $(pwd)"
-        _gw_herdr_open_worktree "$repo_root" "$target"
+        cd "$target" || return 1
+        _gw_success "Now in $(pwd)"
+        _gw_rex_open_worktree "$target"
     else
         _gw_error "Path no longer exists: $target"
         return 1
