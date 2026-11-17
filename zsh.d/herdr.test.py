@@ -29,7 +29,7 @@ class HerdrTests(unittest.TestCase):
     def test_update_plugins_on_both_platforms(self):
         mocks = """
         brew() { :; }; npm() { :; }; pi() { :; }; android() { :; }
-        npx() { :; }; xcodes() { :; }
+        xcodes() { :; }
         gh() { print -r -- "gh $*"; }
         sudo() { print -r -- 'unexpected sudo wrapper'; return 1; }
         herdr() { print -r -- "$*"; }
