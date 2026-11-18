@@ -1,22 +1,22 @@
 {
   "theme": "system",
   "defaultProvider": "openai",
-  "defaultModel": "gpt-6.1-sol",
+  "defaultModel": "gpt-6.2-sol",
   "enabledModels": [
     "openrouter/z-ai/glm-5.3-flash",
     "openrouter/deepseek/deepseek-v4.1-flash-1017",
-    "openai/gpt-6.1-sol",
-    "openai/gpt-6-astra"
+    "openai/gpt-6.2-sol",
+    "openai/gpt-6.2-astra"
   ],
   "subagents": {
     "agentOverrides": {
       "scout": { "model": "openrouter/z-ai/glm-5.3-flash" },
       "delegate": { "model": "openrouter/deepseek/deepseek-v4.1-flash-1017" },
-      "evidence-auditor": { "model": "openai/gpt-6.1-sol" },
+      "evidence-auditor": { "model": "openai/gpt-6.2-sol" },
       "researcher": { "model": "openrouter/deepseek/deepseek-v4.1-flash-1017" },
       "worker": { "model": "openrouter/z-ai/glm-5.3-flash" },
       "reviewer": { "model": "openrouter/deepseek/deepseek-v4.1-flash-1017" },
-      "oracle": { "model": "openai/gpt-6-astra" }
+      "oracle": { "model": "openai/gpt-6.2-astra" }
     }
   },
   "defaultTools": ["+codemode"],
