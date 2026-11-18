@@ -31,7 +31,11 @@ zed:
 	ln -sf $(DOTFILE_PATH)/zed_config.json $(HOME)/.config/zed/settings.json
 
 rex:
-	rex skill setup --agent pi --session-naming
+	@if command -v rex >/dev/null 2>&1; then \
+		rex skill setup --agent pi --session-naming; \
+	else \
+		echo "rex not on PATH: skipping Rex Pi skill setup"; \
+	fi
 
 pi-packages:
 	npm install -g --ignore-scripts @earendil-works/pi-coding-agent

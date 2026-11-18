@@ -57,8 +57,9 @@ make rex        # Install Rex's Pi skill with automatic session naming
 make pi         # Install pi coding agent configs, packages, and settings
 ```
 
-Install Rex separately and put its `rex` CLI on `PATH` before running `make rex` or
-`make pi`. Rex is currently distributed through its beta, not this Brewfile.
+Install Rex separately and put its `rex` CLI on `PATH` to let `make rex` and
+`make pi` set up its Pi skill; without the CLI they skip that step with a note.
+Rex is currently distributed through its beta, not this Brewfile.
 Rex updates through the app; `update` refreshes its Pi skill through `rex skill setup`.
 
 Use one Rex session per project (`rex new Project -c /path/to/repo`). Inside that
