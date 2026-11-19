@@ -57,8 +57,9 @@ make rex        # Install Rex's Pi skill with automatic session naming
 make pi         # Install pi coding agent configs, packages, and settings
 ```
 
-`make pi` installs missing [Addy Osmani Agent Skills](https://github.com/addyosmani/agent-skills)
-for Pi with `gh skills`. Run `gh auth login` first to avoid GitHub API rate limits.
+`make pi` installs all [Addy Osmani Agent Skills](https://github.com/addyosmani/agent-skills)
+for Pi with `gh skills install`, overwriting existing skills with matching names.
+Run `gh auth login` first to avoid GitHub API rate limits.
 The `update` command refreshes GitHub-managed skills. Pack-level reference
 checklists are available in the upstream repository, not in the skill installs.
 

@@ -45,12 +45,7 @@ pi-packages:
 	done
 	gh extension list | grep -q '^gh stack[[:space:]]' || gh extension install github/gh-stack
 	test -f $(HOME)/.pi/agent/skills/gh-stack/SKILL.md || gh skill install github/gh-stack gh-stack --agent pi --scope user
-	# Bulk install fails if any skill already exists.
-	skills=$$(GH_PROMPT_DISABLED=1 gh skills install addyosmani/agent-skills </dev/null) || exit $$?; \
-	for skill in $$(printf '%s\n' "$$skills" | cut -f1); do \
-		test -f "$(HOME)/.pi/agent/skills/$$skill/SKILL.md" || \
-			GH_PROMPT_DISABLED=1 gh skills install addyosmani/agent-skills "skills/$$skill" --agent pi --scope user || exit $$?; \
-	done
+	gh skills install addyosmani/agent-skills --all --force --agent pi --scope user
 
 pi: pi-packages rex
 	mkdir -p $(HOME)/.pi/agent/prompts $(HOME)/.pi/agent/extensions $(HOME)/.pi/agent/skills
