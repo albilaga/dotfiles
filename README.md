@@ -57,6 +57,11 @@ make rex        # Install Rex's Pi skill with automatic session naming
 make pi         # Install pi coding agent configs, packages, and settings
 ```
 
+`make pi` installs missing [Addy Osmani Agent Skills](https://github.com/addyosmani/agent-skills)
+for Pi with `gh skills`. Run `gh auth login` first to avoid GitHub API rate limits.
+The `update` command refreshes GitHub-managed skills. Pack-level reference
+checklists are available in the upstream repository, not in the skill installs.
+
 Install Rex separately and put its `rex` CLI on `PATH` to let `make rex` and
 `make pi` set up its Pi skill; without the CLI they skip that step with a note.
 Rex is currently distributed through its beta, not this Brewfile.
