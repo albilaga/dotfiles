@@ -194,8 +194,7 @@ Any `.sh` files in this directory will be automatically sourced by zsh but won't
 │   ├── settings.json        # Default settings (theme, models, packages)
 │   ├── keybindings.json     # Keybinding overrides
 │   └── prompts/
-│       ├── pr.md            # /pr prompt template
-│       └── workflow.md      # /workflow prompt template
+│       └── pr.md            # /pr prompt template
 ├── zsh.d/                   # Modular zsh configs
 │   ├── aliases.Darwin.sh
 │   ├── env.Darwin.sh
