@@ -18,6 +18,7 @@
 
 ## Tests
 
+- Do not run or delegate browser tests or tests on physical devices, emulators, or simulators unless explicitly requested or called for by the `/pr` workflow. This does not restrict unit tests or other checks that do not use a browser or device.
 - Test code behavior, not language, runtime, or framework guarantees.
 - Do not test trivial constructors that only assign inputs, trivial accessors, or equivalent boilerplate.
 - Test through observable behavior. If a test requires exposing an internal solely for testing, do not add that test.
