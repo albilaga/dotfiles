@@ -18,7 +18,8 @@
 
 ## Tests
 
-- Do not run or delegate browser tests or tests on physical devices, emulators, or simulators unless explicitly requested or called for by the `/pr` workflow. This does not restrict unit tests or other checks that do not use a browser or device.
+- Unit tests and in-process UI tests (such as component or widget tests) are allowed without asking when they do not use a browser, physical device, emulator, or simulator.
+- Do not run or delegate tests that use a browser, physical device, emulator, or simulator unless explicitly requested or called for by `/pr`. This includes Playwright (even headless) and ADB, even when invoked through a project's test suite.
 - Test code behavior, not language, runtime, or framework guarantees.
 - Do not test trivial constructors that only assign inputs, trivial accessors, or equivalent boilerplate.
 - Test through observable behavior. If a test requires exposing an internal solely for testing, do not add that test.
