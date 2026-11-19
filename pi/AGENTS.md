@@ -18,8 +18,8 @@
 
 ## Tests
 
-- Unit tests and in-process UI tests (such as component or widget tests) are allowed without asking when they do not use a browser, physical device, emulator, or simulator.
-- Do not run or delegate tests that use a browser, physical device, emulator, or simulator unless explicitly requested or called for by `/pr`. This includes Playwright (even headless) and ADB, even when invoked through a project's test suite.
+- Write and run repeatable project tests with assertions through the project's test runner (for example, Gradle or npm) without asking. This includes UI tests that use a browser, physical device, emulator, or simulator.
+- Do not drive a browser or device directly or delegate ad hoc control (for example, clicking with Playwright or tapping with `adb shell input`) unless explicitly requested or called for by `/pr`.
 - Test code behavior, not language, runtime, or framework guarantees.
 - Do not test trivial constructors that only assign inputs, trivial accessors, or equivalent boilerplate.
 - Test through observable behavior. If a test requires exposing an internal solely for testing, do not add that test.
