@@ -313,7 +313,10 @@ export PATH="$HOME/Library/Android/sdk/cmdline-tools/latest/bin:$HOME/Library/An
 # pipx
 export PATH="$PATH:$HOME/.local/bin"
 
-# dotnet tools
+# dotnet
+if [[ -x /opt/homebrew/opt/dotnet@10/bin/dotnet ]]; then
+  export PATH="/opt/homebrew/opt/dotnet@10/bin:$PATH"
+fi
 export PATH="$PATH:$HOME/.dotnet/tools"
 
 # fzf
